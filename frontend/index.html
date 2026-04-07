@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Profile Manager PoC</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Profile Manager - Avance funcional</h1>
+
+<section>
+<h2>1. Registro</h2>
+<input id="name" placeholder="Nombre">
+<input id="email" placeholder="Correo">
+<input id="password" type="password" placeholder="Contraseña">
+<button onclick="registerUser()">Registrarme</button>
+<p id="registerMsg"></p>
+</section>
+
+<section>
+<h2>2. Inicio de sesión</h2>
+<input id="loginEmail" placeholder="Correo">
+<input id="loginPassword" type="password" placeholder="Contraseña">
+<button onclick="loginUser()">Iniciar sesión</button>
+<p id="loginMsg"></p>
+</section>
+
+<section>
+<h2>3. Perfil</h2>
+<input id="city" placeholder="Ciudad" value="Medellín">
+<input id="modality" placeholder="Modalidad" value="Remoto">
+<input id="seniority" placeholder="Seniority" value="Junior">
+<input id="skills" placeholder="Skills separadas por coma" value="SQL,Excel">
+<button onclick="saveProfile()">Guardar perfil</button>
+<p id="profileMsg"></p>
+</section>
+
+<section>
+<h2>4. Lista de vacantes</h2>
+<button onclick="loadJobs()">Cargar vacantes</button>
+<div id="jobsList"></div>
+</section>
+
+<section>
+<h2>5. Recomendaciones</h2>
+<button onclick="getRecommendations()">Generar recomendaciones</button>
+<div id="recommendations"></div>
+</section>
+
+<section>
+<h2>6. Vacantes guardadas</h2>
+<button onclick="loadSavedJobs()">Ver guardadas</button>
+<div id="savedJobs"></div>
+</section>
+
+<section>
+<h2>7. Postulaciones</h2>
+<button onclick="loadApplications()">Ver postulaciones</button>
+<div id="applications"></div>
+</section>
+
+<section>
+<h2>8. Eventos del usuario</h2>
+<button onclick="loadEvents()">Ver eventos</button>
+<div id="events"></div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

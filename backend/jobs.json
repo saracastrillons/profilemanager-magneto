@@ -1,0 +1,29 @@
+[
+    {
+    "id": 1,
+    "title": "Data Analyst",
+    "company": "TechData",
+    "city": "Medellín",
+    "modality": "Remoto",
+    "skills": ["SQL", "Excel"],
+    "days": 3
+    },
+    {
+    "id": 2,
+    "title": "Frontend Developer",
+    "company": "WebStudio",
+    "city": "Bogotá",
+    "modality": "Híbrido",
+    "skills": ["React", "JavaScript"],
+    "days": 10
+    },
+    {
+    "id": 3,
+    "title": "Backend Developer",
+    "company": "CodeLabs",
+    "city": "Medellín",
+    "modality": "Remoto",
+    "skills": ["Node", "SQL"],
+    "days": 5
+    }
+    ]
