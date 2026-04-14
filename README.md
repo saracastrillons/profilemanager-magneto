@@ -1,6 +1,6 @@
 # Profile Manager Magneto MVP
 
-Avance funcional del proyecto ProfileMatch / Profile Manager orientado a registro, perfil, vacantes, recomendaciones explicables, postulaciones y eventos de interacción.
+Avance funcional del proyecto ProfileMatch orientado a registro, perfil, vacantes, recomendaciones explicables en base a un modelo baseline, postulaciones y eventos de interaccion
 
 ## Estructura
 
@@ -10,8 +10,8 @@ Avance funcional del proyecto ProfileMatch / Profile Manager orientado a registr
 ## Ejecución
 
 ### Backend
-Entrar a la carpeta backend y ejecutar:
-
+Ejecutar en la terminal de vs
+cd backend
 npm install
 npm start
 
@@ -20,14 +20,11 @@ Abrir frontend/index.html con Live Server o en el navegador.
 
 ## Funcionalidades implementadas
 
-- Registro
-- Inicio de sesión
-- Guardar perfil
+- Registro e inicio de sesión
+- Completar perfil profesional
 - Ver vacantes
 - Generar recomendaciones
 - Mostrar score, desglose y razones
-- Guardar vacantes
-- Descartar vacantes
 - Postularse
 - Ver postulaciones
 - Ver eventos
