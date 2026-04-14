@@ -1,39 +1,331 @@
-body {
+:root {
+    --primary-purple: #6F4BFF;
+    --primary-purple-dark: #5B39E6;
+    --soft-green: #B7F5CF;
+    --green-dark: #2F9E68;
+    --light-bg: #f4f6fb;
+    --white: #ffffff;
+    --text-dark: #1f2937;
+    }
+    
+    * {
+    box-sizing: border-box;
+    }
+    
+    body {
+    margin: 0;
     font-family: Arial, sans-serif;
-    margin: 30px;
-    background: #f4f6f8;
+    background: var(--light-bg);
+    color: var(--text-dark);
     }
     
-    h1 {
-    text-align: center;
+    .topbar {
+    background: linear-gradient(90deg, var(--primary-purple-dark), var(--primary-purple));
+    color: var(--white);
+    padding: 24px 40px;
     }
     
-    section {
-    background: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    .logo-box h1 {
+    margin: 0;
+    font-size: 28px;
+    }
+    
+    .logo-box p {
+    margin: 6px 0 0 0;
+    opacity: 0.9;
+    }
+    
+    .hero {
+    background: #eef3ff;
+    padding: 28px 40px;
+    border-bottom: 1px solid #d9e2f3;
+    }
+    
+    .hero-text h2 {
+    margin: 0 0 8px 0;
+    font-size: 30px;
+    }
+    
+    .hero-text p {
+    margin: 0;
+    color: #4b5563;
+    max-width: 800px;
+    }
+    
+    .container {
+    width: 92%;
+    max-width: 1300px;
+    margin: 24px auto 40px auto;
+    }
+    
+    .panel {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    }
+    
+    .panel h3,
+    .panel h4 {
+    margin-top: 0;
+    color: var(--primary-purple-dark);
+    }
+    
+    .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    }
+    
+    .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
     }
     
     input {
-    display: block;
-    margin: 8px 0;
-    padding: 8px;
-    width: 320px;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cfd7ea;
+    border-radius: 10px;
+    background: #fbfcff;
+    font-size: 14px;
+    }
+    
+    input:focus {
+    outline: none;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(111, 75, 255, 0.12);
     }
     
     button {
-    padding: 8px 14px;
-    margin-top: 8px;
-    margin-right: 8px;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 18px;
+    background: var(--primary-purple);
+    color: var(--white);
     cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
     }
     
-    .card {
-    border: 1px solid #ccc;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 8px;
-    background: #fafafa;
+    button:hover {
+    background: var(--primary-purple-dark);
     }
+    
+    .secondary-btn {
+    background: var(--soft-green);
+    color: var(--green-dark);
+    border: 1px solid var(--green-dark);
+    }
+    
+    .secondary-btn:hover {
+    background: #9ff0c1;
+    }
+    
+    .msg {
+    margin-top: 12px;
+    color: var(--primary-purple-dark);
+    font-weight: bold;
+    }
+    
+    .completion-box {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    }
+    
+    .progress-bar {
+    width: 100%;
+    height: 14px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 14px 0 20px 0;
+    }
+    
+    .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-purple-dark), var(--primary-purple));
+    transition: width 0.3s ease;
+    }
+    
+    .wizard-steps {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    }
+    
+    .step-btn {
+    background: #eef2ff;
+    color: var(--primary-purple-dark);
+    }
+    
+    .active-step {
+    background: var(--primary-purple);
+    color: var(--white);
+    }
+    
+    .wizard-step {
+    display: none;
+    }
+    
+    .active-step-content {
+    display: block;
+    }
+    
+    .wizard-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    }
+    
+    .dashboard-text {
+    color: #4b5563;
+    }
+    
+    .cards-grid {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    }
+    
+    .job-card-simple,
+    .job-card,
+    .detail-card {
+    background: #fbfcff;
+    border: 1px solid #dde4f1;
+    border-radius: 16px;
+    padding: 16px;
+    }
+    
+    .job-card-simple h4,
+    .job-card h4,
+    .detail-card h3 {
+    margin: 8px 0;
+    }
+    
+    .company {
+    color: #4b5563;
+    font-weight: bold;
+    }
+    
+    .job-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    }
+    
+    .card-buttons,
+    .detail-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    }
+    
+    .recommendation-layout {
+    display: flex;
+    gap: 18px;
+    margin-top: 18px;
+    }
+    
+    .left-column {
+    width: 40%;
+    }
+    
+    .right-column {
+    width: 60%;
+    min-height: 350px;
+    }
+    
+    .recommendation-card {
+    cursor: pointer;
+    transition: 0.2s;
+    margin-bottom: 12px;
+    }
+    
+    .recommendation-card:hover {
+    background: #eef3ff;
+    transform: translateY(-2px);
+    }
+    
+    .recommendation-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    }
+    
+    .tag {
+    display: inline-block;
+    background: #f1ebff;
+    color: var(--primary-purple-dark);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: bold;
+    }
+    
+    .score-pill {
+    background: var(--primary-purple);
+    color: var(--white);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: bold;
+    }
+    
+    .job-days {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+    }
+    
+    .detail-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+    }
+    
+    .empty-state {
+    background: #fbfcff;
+    border: 1px dashed #cfd7ea;
+    border-radius: 16px;
+    padding: 20px;
+    }
+    
+    ul {
+    padding-left: 20px;
+    }
+    
+    p {
+    line-height: 1.5;
+    }
+    
+    @media (max-width: 900px) {
+    .recommendation-layout {
+    flex-direction: column;
+    }
+    
+    .left-column,
+    .right-column {
+    width: 100%;
+    }
+    
+    .topbar,
+    .hero {
+    padding: 20px;
+    }
+    }
+    

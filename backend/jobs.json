@@ -6,7 +6,9 @@
     "city": "Medellín",
     "modality": "Remoto",
     "skills": ["SQL", "Excel"],
-    "days": 3
+    "days": 3,
+    "salary": "$3.500.000 - $4.500.000",
+    "description": "Vacante orientada al análisis de datos, generación de reportes y apoyo en la toma de decisiones."
     },
     {
     "id": 2,
@@ -15,7 +17,9 @@
     "city": "Bogotá",
     "modality": "Híbrido",
     "skills": ["React", "JavaScript"],
-    "days": 10
+    "days": 10,
+    "salary": "$4.000.000 - $5.500.000",
+    "description": "Se busca desarrollador frontend para construir interfaces modernas, reutilizables y enfocadas en experiencia de usuario."
     },
     {
     "id": 3,
@@ -24,6 +28,30 @@
     "city": "Medellín",
     "modality": "Remoto",
     "skills": ["Node", "SQL"],
-    "days": 5
+    "days": 5,
+    "salary": "$4.500.000 - $6.000.000",
+    "description": "Vacante enfocada en desarrollo de servicios backend, diseño de APIs REST y conexión con almacenamiento de datos."
+    },
+    {
+    "id": 4,
+    "title": "Business Analyst",
+    "company": "Innova Group",
+    "city": "Cali",
+    "modality": "Híbrido",
+    "skills": ["Excel", "SQL"],
+    "days": 8,
+    "salary": "$3.800.000 - $4.800.000",
+    "description": "Perfil orientado al levantamiento de requerimientos, análisis de procesos y apoyo funcional."
+    },
+    {
+    "id": 5,
+    "title": "QA Tester",
+    "company": "SoftQuality",
+    "city": "Bogotá",
+    "modality": "Presencial",
+    "skills": ["Testing", "Excel"],
+    "days": 2,
+    "salary": "$3.000.000 - $4.000.000",
+    "description": "Responsable de validar funcionalidades, documentar incidencias y apoyar el aseguramiento de la calidad."
     }
     ]

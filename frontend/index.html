@@ -3,68 +3,162 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Profile Manager PoC</title>
+<title>Profile Manager Magneto</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>Profile Manager - Avance funcional</h1>
+<header class="topbar">
+<div class="logo-box">
+<h1>Profile Manager</h1>
+<p>Portal de empleos con recomendaciones explicables</p>
+</div>
+</header>
 
-<section>
-<h2>1. Registro</h2>
-<input id="name" placeholder="Nombre">
-<input id="email" placeholder="Correo">
+<section class="hero">
+<div class="hero-text">
+<h2>Encuentra vacantes ajustadas a tu perfil</h2>
+<p>Completa tu perfil por pasos y revisa tus recomendaciones en un panel principal.</p>
+</div>
+</section>
+
+<main class="container">
+<section class="panel">
+<h3>1. Registro</h3>
+<div class="form-grid">
+<input id="name" placeholder="Nombre completo">
+<input id="email" placeholder="Correo electrónico">
 <input id="password" type="password" placeholder="Contraseña">
+</div>
 <button onclick="registerUser()">Registrarme</button>
-<p id="registerMsg"></p>
+<p id="registerMsg" class="msg"></p>
 </section>
 
-<section>
-<h2>2. Inicio de sesión</h2>
-<input id="loginEmail" placeholder="Correo">
+<section class="panel">
+<h3>2. Inicio de sesión</h3>
+<div class="form-grid">
+<input id="loginEmail" placeholder="Correo electrónico">
 <input id="loginPassword" type="password" placeholder="Contraseña">
+</div>
 <button onclick="loginUser()">Iniciar sesión</button>
-<p id="loginMsg"></p>
+<p id="loginMsg" class="msg"></p>
 </section>
 
-<section>
-<h2>3. Perfil</h2>
+<section class="panel">
+<div class="section-header">
+<h3>3. Onboarding del perfil</h3>
+<div class="completion-box">
+<span>Perfil completado:</span>
+<strong id="completionText">0%</strong>
+</div>
+</div>
+
+<div class="progress-bar">
+<div id="progressFill" class="progress-fill"></div>
+</div>
+
+<div class="wizard-steps">
+<button class="step-btn active-step" id="stepBtn1" onclick="showStep(1)">Paso 1</button>
+<button class="step-btn" id="stepBtn2" onclick="showStep(2)">Paso 2</button>
+<button class="step-btn" id="stepBtn3" onclick="showStep(3)">Paso 3</button>
+</div>
+
+<div id="step1" class="wizard-step active-step-content">
+<h4>Datos básicos</h4>
+<div class="form-grid">
 <input id="city" placeholder="Ciudad" value="Medellín">
-<input id="modality" placeholder="Modalidad" value="Remoto">
 <input id="seniority" placeholder="Seniority" value="Junior">
-<input id="skills" placeholder="Skills separadas por coma" value="SQL,Excel">
+</div>
+</div>
+
+<div id="step2" class="wizard-step">
+<h4>Preferencias laborales</h4>
+<div class="form-grid">
+<input id="modality" placeholder="Modalidad" value="Remoto">
+<input id="roleTarget" placeholder="Cargo objetivo" value="Data Analyst">
+<input id="availability" placeholder="Disponibilidad" value="Tiempo completo">
+</div>
+</div>
+
+<div id="step3" class="wizard-step">
+<h4>Habilidades</h4>
+<div class="form-grid">
+<input id="skills" placeholder="Skills separadas por coma" value="SQL, Excel">
+</div>
+</div>
+
+<div class="wizard-actions">
+<button class="secondary-btn" onclick="previousStep()">Anterior</button>
+<button class="secondary-btn" onclick="nextStep()">Siguiente</button>
 <button onclick="saveProfile()">Guardar perfil</button>
-<p id="profileMsg"></p>
+</div>
+
+<p id="profileMsg" class="msg"></p>
 </section>
 
-<section>
-<h2>4. Lista de vacantes</h2>
+<section class="panel">
+<h3>4. Dashboard del usuario</h3>
+<p class="dashboard-text">
+En este panel el usuario puede consultar vacantes, recomendaciones, postulaciones y eventos.
+</p>
+</section>
+
+<section class="panel">
+<div class="section-header">
+<h3>Vacantes disponibles</h3>
 <button onclick="loadJobs()">Cargar vacantes</button>
-<div id="jobsList"></div>
+</div>
+<div id="jobsListSimple" class="cards-grid"></div>
 </section>
 
-<section>
-<h2>5. Recomendaciones</h2>
+<section class="panel">
+<div class="section-header">
+<h3>Recomendaciones</h3>
 <button onclick="getRecommendations()">Generar recomendaciones</button>
-<div id="recommendations"></div>
+</div>
+
+<div class="recommendation-layout">
+<div id="jobsList" class="left-column"></div>
+<div id="jobDetail" class="right-column">
+<div class="empty-state">
+<h4>Detalle de vacante</h4>
+<p>Selecciona una recomendación para ver score, desglose y razones.</p>
+</div>
+</div>
+</div>
 </section>
 
-<section>
-<h2>6. Vacantes guardadas</h2>
+<section class="panel">
+<div class="section-header">
+<h3>Vacantes guardadas</h3>
 <button onclick="loadSavedJobs()">Ver guardadas</button>
-<div id="savedJobs"></div>
+</div>
+<div id="savedJobs" class="cards-grid"></div>
 </section>
 
-<section>
-<h2>7. Postulaciones</h2>
+<section class="panel">
+<div class="section-header">
+<h3>Postulaciones</h3>
 <button onclick="loadApplications()">Ver postulaciones</button>
-<div id="applications"></div>
+</div>
+<div id="applications" class="cards-grid"></div>
 </section>
 
-<section>
-<h2>8. Eventos del usuario</h2>
+<section class="panel">
+<div class="section-header">
+<h3>Eventos del usuario</h3>
 <button onclick="loadEvents()">Ver eventos</button>
-<div id="events"></div>
+</div>
+<div id="events" class="cards-grid"></div>
 </section>
+
+<section class="panel">
+<div class="section-header">
+<h3>Log de recomendaciones</h3>
+<button onclick="loadRecommendationLogs()">Ver log</button>
+</div>
+<div id="recommendationLogs" class="cards-grid"></div>
+</section>
+</main>
 
 <script src="app.js"></script>
 </body>

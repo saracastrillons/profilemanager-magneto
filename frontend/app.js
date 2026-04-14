@@ -1,4 +1,38 @@
 let currentUserId = null;
+let currentStep = 1;
+window.jobsData = [];
+
+function showStep(step) {
+currentStep = step;
+
+document.querySelectorAll(".wizard-step").forEach((item) => {
+item.classList.remove("active-step-content");
+});
+
+document.querySelectorAll(".step-btn").forEach((item) => {
+item.classList.remove("active-step");
+});
+
+document.getElementById(`step${step}`).classList.add("active-step-content");
+document.getElementById(`stepBtn${step}`).classList.add("active-step");
+}
+
+function nextStep() {
+if (currentStep < 3) {
+showStep(currentStep + 1);
+}
+}
+
+function previousStep() {
+if (currentStep > 1) {
+showStep(currentStep - 1);
+}
+}
+
+function updateCompletionBar(value) {
+document.getElementById("completionText").innerText = `${value}%`;
+document.getElementById("progressFill").style.width = `${value}%`;
+}
 
 async function registerUser() {
 const name = document.getElementById("name").value;
@@ -34,6 +68,7 @@ document.getElementById("loginMsg").innerText = data.message;
 
 if (data.user) {
 currentUserId = data.user.id;
+loadProfileCompletion();
 }
 }
 
@@ -41,6 +76,8 @@ async function saveProfile() {
 const city = document.getElementById("city").value;
 const modality = document.getElementById("modality").value;
 const seniority = document.getElementById("seniority").value;
+const roleTarget = document.getElementById("roleTarget").value;
+const availability = document.getElementById("availability").value;
 const skills = document.getElementById("skills").value
 .split(",")
 .map((s) => s.trim())
@@ -54,31 +91,59 @@ userId: currentUserId,
 city,
 modality,
 seniority,
-skills
+skills,
+roleTarget,
+availability
 })
 });
 
 const data = await res.json();
 document.getElementById("profileMsg").innerText = data.message;
+
+if (data.completion !== undefined) {
+updateCompletionBar(data.completion);
+}
+}
+
+async function loadProfileCompletion() {
+if (!currentUserId) return;
+
+const res = await fetch(`http://localhost:3001/profile/${currentUserId}`);
+const data = await res.json();
+
+if (data.completion !== undefined) {
+updateCompletionBar(data.completion);
+}
 }
 
 async function loadJobs() {
 const res = await fetch("http://localhost:3001/jobs");
 const data = await res.json();
 
-const container = document.getElementById("jobsList");
+const container = document.getElementById("jobsListSimple");
 container.innerHTML = "";
 
 data.forEach((job) => {
 container.innerHTML += `
-<div class="card">
-<h3>${job.title}</h3>
-<p><b>Empresa:</b> ${job.company}</p>
-<p><b>Ciudad:</b> ${job.city}</p>
-<p><b>Modalidad:</b> ${job.modality}</p>
-<p><b>Skills:</b> ${job.skills.join(", ")}</p>
+<div class="job-card-simple">
+<div class="job-top">
+<div>
+<p class="job-days">Hace ${job.days} días</p>
+<h4>${job.title}</h4>
+<p class="company">${job.company}</p>
+</div>
+<span class="tag">${job.modality}</span>
+</div>
+
+<p><strong>Ciudad:</strong> ${job.city}</p>
+<p><strong>Salario:</strong> ${job.salary}</p>
+<p><strong>Skills:</strong> ${job.skills.join(", ")}</p>
+<p>${job.description}</p>
+
+<div class="card-buttons">
 <button onclick="saveJob(${job.id})">Guardar</button>
-<button onclick="dismissJob(${job.id})">Descartar</button>
+<button class="secondary-btn" onclick="dismissJob(${job.id})">Descartar</button>
+</div>
 </div>
 `;
 });
@@ -92,33 +157,90 @@ body: JSON.stringify({ userId: currentUserId })
 });
 
 const data = await res.json();
-const container = document.getElementById("recommendations");
-container.innerHTML = "";
+
+const list = document.getElementById("jobsList");
+const detail = document.getElementById("jobDetail");
+
+list.innerHTML = "";
+detail.innerHTML = `
+<div class="empty-state">
+<h4>Detalle de vacante</h4>
+<p>Selecciona una recomendación para ver score, desglose y razones.</p>
+</div>
+`;
 
 if (!Array.isArray(data)) {
-container.innerHTML = `<p>${data.message}</p>`;
+list.innerHTML = `<p>${data.message}</p>`;
 return;
 }
 
+window.jobsData = data;
+
 data.forEach((job) => {
-container.innerHTML += `
-<div class="card">
+list.innerHTML += `
+<div class="job-card recommendation-card" onclick="showDetail(${job.id})">
+<p class="job-days">Hace ${job.days} días</p>
+<h4>${job.title}</h4>
+<p class="company">${job.company}</p>
+<p>${job.city}</p>
+<div class="recommendation-footer">
+<span class="tag">${job.modality}</span>
+<span class="score-pill">${job.score}/100</span>
+</div>
+</div>
+`;
+});
+}
+
+function showDetail(jobId) {
+const job = window.jobsData.find((j) => j.id === jobId);
+const detail = document.getElementById("jobDetail");
+
+if (!job) {
+detail.innerHTML = "<p>No se encontró la vacante seleccionada.</p>";
+return;
+}
+
+detail.innerHTML = `
+<div class="detail-card">
+<p class="job-days">Publicada hace ${job.days} días</p>
 <h3>${job.title}</h3>
-<p><b>Empresa:</b> ${job.company}</p>
-<p><b>Score:</b> ${job.score}</p>
-<p><b>Desglose:</b></p>
+<p class="company">${job.company}</p>
+
+<div class="detail-meta">
+<span class="tag">${job.modality}</span>
+<span class="tag">${job.city}</span>
+<span class="tag">${job.salary}</span>
+</div>
+
+<div class="detail-actions">
+<button onclick="applyJob(${job.id})">Postularme</button>
+<button onclick="saveJob(${job.id})">Guardar</button>
+<button class="secondary-btn" onclick="dismissJob(${job.id})">Descartar</button>
+</div>
+
+<h4>Descripción</h4>
+<p>${job.description}</p>
+
+<h4>Skills requeridas</h4>
+<p>${job.skills.join(", ")}</p>
+
+<h4>Score de compatibilidad: ${job.score}/100</h4>
 <ul>
 <li>Skills: ${job.breakdown.skills}/50</li>
 <li>Modalidad: ${job.breakdown.modality}/20</li>
 <li>Seniority: ${job.breakdown.seniority}/20</li>
 <li>Recencia: ${job.breakdown.recency}/10</li>
-<li>Historial: ${job.breakdown.historyBonus}</li>
+<li>Bonus por historial: ${job.breakdown.historyBonus}</li>
+<li>Penalización por historial: ${job.breakdown.historyPenalty}</li>
 </ul>
-<p><b>Razones:</b> ${job.reasons.join(", ")}</p>
-<button onclick="applyJob(${job.id})">Postular</button>
+
+<h4>Razones</h4>
+<ul>
+${job.reasons.map((reason) => `<li>${reason}</li>`).join("")}
+</ul>
 </div>
 `;
-});
 }
 
 async function saveJob(jobId) {
@@ -163,9 +285,11 @@ container.innerHTML = "";
 
 data.forEach((item) => {
 container.innerHTML += `
-<div class="card">
-<p><b>Vacante guardada:</b> ${item.job.title}</p>
-<p><b>Empresa:</b> ${item.job.company}</p>
+<div class="job-card-simple">
+<h4>${item.job.title}</h4>
+<p class="company">${item.job.company}</p>
+<p><strong>Ciudad:</strong> ${item.job.city}</p>
+<p><strong>Modalidad:</strong> ${item.job.modality}</p>
 </div>
 `;
 });
@@ -180,11 +304,10 @@ container.innerHTML = "";
 
 data.forEach((app) => {
 container.innerHTML += `
-<div class="card">
-<p><b>Postulación #${app.id}</b></p>
-<p><b>Vacante:</b> ${app.job.title}</p>
-<p><b>Empresa:</b> ${app.job.company}</p>
-<p><b>Estado:</b> ${app.status}</p>
+<div class="job-card-simple">
+<h4>${app.job.title}</h4>
+<p class="company">${app.job.company}</p>
+<p><strong>Estado:</strong> ${app.status}</p>
 </div>
 `;
 });
@@ -199,10 +322,30 @@ container.innerHTML = "";
 
 data.forEach((event) => {
 container.innerHTML += `
-<div class="card">
-<p><b>Evento:</b> ${event.type}</p>
-<p><b>Vacante ID:</b> ${event.jobId}</p>
-<p><b>Usuario ID:</b> ${event.userId}</p>
+<div class="job-card-simple">
+<p><strong>Evento:</strong> ${event.type}</p>
+<p><strong>Vacante ID:</strong> ${event.jobId}</p>
+<p><strong>Usuario ID:</strong> ${event.userId}</p>
+</div>
+`;
+});
+}
+
+async function loadRecommendationLogs() {
+const res = await fetch(`http://localhost:3001/recommendations-log/${currentUserId}`);
+const data = await res.json();
+
+const container = document.getElementById("recommendationLogs");
+container.innerHTML = "";
+
+data.forEach((log) => {
+container.innerHTML += `
+<div class="job-card-simple">
+<p><strong>Vacante ID:</strong> ${log.jobId}</p>
+<p><strong>Score:</strong> ${log.score}</p>
+<p><strong>Skills:</strong> ${log.breakdown.skills}</p>
+<p><strong>Modalidad:</strong> ${log.breakdown.modality}</p>
+<p><strong>Seniority:</strong> ${log.breakdown.seniority}</p>
 </div>
 `;
 });
