@@ -9,14 +9,12 @@ Avance funcional del proyecto ProfileMatch orientado a registro, perfil, vacante
 
 ## Ejecución
 
-### Backend
 Ejecutar en la terminal de vs
 cd backend
 npm install
 npm start
 
-### Frontend
-Abrir frontend/index.html con Live Server o en el navegador.
+Luego abrir frontend/index.html con Live Server o en el navegador.
 
 ## Funcionalidades implementadas
 
@@ -25,6 +23,7 @@ Abrir frontend/index.html con Live Server o en el navegador.
 - Ver vacantes
 - Generar recomendaciones
 - Mostrar score, desglose y razones
+- interactuar con vacantes (CRUD)
 - Postularse
 - Ver postulaciones
 - Ver eventos
