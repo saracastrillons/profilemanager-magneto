@@ -13,7 +13,7 @@ Ejecutar en la terminal de vs
 1. cd backend
 2. npm install
 3. npm start
-
+ 
 Luego abrir frontend/index.html con Live Server o en el navegador (con click derecho)
 
 ## Funcionalidades implementadas
