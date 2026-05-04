@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Profile Manager Magneto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <div class="brand sidebar-brand">
+      <div class="brand-mark">PM</div>
+      <div>
+        <strong>Profile Manager</strong>
+        <span>Magneto</span>
+      </div>
+    </div>
+
+    <button class="side-btn active" onclick="showSection('profileSection', this)">Mi perfil</button>
+    <button class="side-btn" onclick="showSection('recommendationsSection', this); loadRecommendations();">Recomendaciones</button>
+    <button class="side-btn" onclick="showSection('jobsSection', this); loadJobs();">Vacantes</button>
+    <button class="side-btn" onclick="showSection('savedSection', this); loadSavedJobs();">Guardadas</button>
+    <button class="side-btn" onclick="showSection('applicationsSection', this); loadApplications();">Postulaciones</button>
+    <button class="side-btn" onclick="showSection('historySection', this); loadEvents();">Historial</button>
+    <button class="side-btn" onclick="showSection('notificationsSection', this); loadNotifications();">Notificaciones</button>
+    <button class="side-btn logout" onclick="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main class="dashboard-main">
+    <header class="dashboard-header">
+      <div>
+        <p class="section-label">Panel de usuario</p>
+        <h1 id="welcomeTitle">Hola</h1>
+      </div>
+      <div class="completion-card">
+        <span>Perfil completo</span>
+        <strong id="completionText">0%</strong>
+        <div class="progress"><div id="progressFill"></div></div>
+      </div>
+    </header>
+
+    <section id="profileSection" class="dash-section active-section">
+      <div class="section-heading">
+        <h2>Completa tu perfil profesional</h2>
+        <p>Estos datos se usan para recomendaciones, postulaciones y envío de hoja de vida.</p>
+      </div>
+
+      <div class="card form-card">
+        <div class="form-grid">
+          <div><label>Teléfono</label><input id="phone" placeholder="3001234567" /></div>
+          <div><label>Ciudad</label><input id="city" placeholder="Medellín" /></div>
+          <div><label>Profesión</label><input id="profession" placeholder="Ingeniera de Software" /></div>
+          <div><label>Nivel de estudios</label><input id="education" placeholder="Pregrado" /></div>
+          <div><label>Años de experiencia</label><input id="yearsExperience" type="number" placeholder="1" /></div>
+          <div><label>Aspiración salarial mínima</label><input id="salaryMin" type="number" placeholder="2500000" /></div>
+          <div><label>Modalidad preferida</label><select id="modality"><option>Remoto</option><option>Híbrido</option><option>Presencial</option></select></div>
+          <div><label>Nivel</label><select id="seniority"><option>Practicante</option><option>Junior</option><option>Mid</option><option>Senior</option></select></div>
+          <div><label>Disponibilidad</label><select id="availability"><option>Inmediata</option><option>15 días</option><option>30 días</option></select></div>
+          <div><label>Rol objetivo</label><input id="roleTarget" placeholder="Frontend Junior" /></div>
+          <div><label>LinkedIn</label><input id="linkedin" placeholder="https://linkedin.com/in/..." /></div>
+          <div><label>GitHub / Portafolio</label><input id="github" placeholder="https://github.com/..." /></div>
+        </div>
+
+        <label>Experiencia laboral</label>
+        <textarea id="experience" placeholder="Describe brevemente tu experiencia"></textarea>
+
+        <label>Habilidades separadas por coma</label>
+        <textarea id="skills" placeholder="HTML, CSS, JavaScript, SQL"></textarea>
+
+        <button type="button" onclick="saveProfile()">Guardar perfil</button>
+        <p id="profileMsg" class="message"></p>
+      </div>
+
+      <div class="card form-card">
+        <h3>Hoja de vida en PDF</h3>
+        <p>Sube tu CV. Se adjuntará automáticamente cuando te postules.</p>
+        <input id="cvFile" type="file" accept="application/pdf" />
+        <button type="button" onclick="uploadCV()">Subir / reemplazar CV</button>
+        <p id="cvMsg" class="message"></p>
+        <a id="cvLink" class="small-link hidden" target="_blank">Ver hoja de vida cargada</a>
+      </div>
+    </section>
+
+    <section id="recommendationsSection" class="dash-section">
+      <div class="section-heading">
+        <h2>Recomendaciones explicables</h2>
+        <p>El sistema compara habilidades, modalidad, ciudad, nivel y salario.</p>
+      </div>
+      <div class="split-layout">
+        <div id="recommendationsList" class="grid-cards"></div>
+        <div id="recommendationDetail" class="card detail-panel">Selecciona una vacante para ver el detalle.</div>
+      </div>
+    </section>
+
+    <section id="jobsSection" class="dash-section">
+      <div class="section-heading">
+        <h2>Vacantes disponibles</h2>
+        <p>Usa filtros reales para encontrar oportunidades.</p>
+      </div>
+      <div class="card filters">
+        <input id="filterCity" placeholder="Ciudad" />
+        <select id="filterModality"><option value="">Modalidad</option><option>Remoto</option><option>Híbrido</option><option>Presencial</option></select>
+        <select id="filterSeniority"><option value="">Nivel</option><option>Practicante</option><option>Junior</option><option>Mid</option><option>Senior</option></select>
+        <input id="filterSkill" placeholder="Habilidad" />
+        <input id="filterSalary" type="number" placeholder="Salario mínimo" />
+        <button type="button" onclick="loadJobs()">Filtrar</button>
+      </div>
+      <div id="jobsList" class="grid-cards"></div>
+    </section>
+
+    <section id="savedSection" class="dash-section">
+      <div class="section-heading"><h2>Vacantes guardadas</h2><p>Oportunidades que marcaste para revisar después.</p></div>
+      <div id="savedJobs" class="grid-cards"></div>
+    </section>
+
+    <section id="applicationsSection" class="dash-section">
+      <div class="section-heading"><h2>Mis postulaciones</h2><p>Seguimiento de estado de tus procesos.</p></div>
+      <div id="applications" class="grid-cards"></div>
+    </section>
+
+    <section id="historySection" class="dash-section">
+      <div class="section-heading"><h2>Historial</h2><p>Actividad registrada dentro del portal.</p></div>
+      <div id="events" class="timeline"></div>
+    </section>
+
+    <section id="notificationsSection" class="dash-section">
+      <div class="section-heading"><h2>Notificaciones</h2><p>Mensajes importantes de tu cuenta.</p></div>
+      <div id="notifications" class="timeline"></div>
+    </section>
+  </main>
+
+  <script src="app.js?v=professional-final"></script>
+</body>
+</html>

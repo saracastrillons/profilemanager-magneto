@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile Manager Magneto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <div class="brand">
+        <div class="brand-mark">PM</div>
+        <div>
+          <strong>Profile Manager Magneto</strong>
+          <span>Portal de empleos con recomendaciones explicables</span>
+        </div>
+      </div>
+      <a class="nav-link" href="forgot-password.html">Recuperar contraseña</a>
+    </nav>
+
+    <section class="hero-grid">
+      <div>
+        <p class="eyebrow">Empleabilidad inteligente</p>
+        <h1>Encuentra vacantes alineadas con tu perfil profesional.</h1>
+        <p class="hero-text">Completa tu perfil, recibe recomendaciones con explicación clara y gestiona tus postulaciones en un solo lugar.</p>
+      </div>
+      <div class="hero-card">
+        <h3>¿Qué hace el sistema?</h3>
+        <ul>
+          <li>Calcula coincidencia de forma transparente.</li>
+          <li>Permite cargar hoja de vida y adjuntarla a postulaciones.</li>
+          <li>Envía correos profesionales de recuperación y postulación.</li>
+        </ul>
+      </div>
+    </section>
+  </header>
+
+  <main class="auth-layout">
+    <section class="card auth-card">
+      <p class="section-label">Acceso</p>
+      <h2>Iniciar sesión</h2>
+      <label>Correo electrónico</label>
+      <input id="loginEmail" type="email" placeholder="correo@ejemplo.com" />
+      <label>Contraseña</label>
+      <input id="loginPassword" type="password" placeholder="Tu contraseña" />
+      <button type="button" onclick="login()">Entrar al portal</button>
+      <p id="loginMsg" class="message"></p>
+      <a class="small-link" href="forgot-password.html">Olvidé mi contraseña</a>
+    </section>
+
+    <section class="card auth-card">
+      <p class="section-label">Nuevo perfil</p>
+      <h2>Crear cuenta</h2>
+      <label>Nombre completo</label>
+      <input id="name" type="text" placeholder="Tu nombre" />
+      <label>Correo electrónico</label>
+      <input id="email" type="email" placeholder="correo@ejemplo.com" />
+      <label>Contraseña</label>
+      <input id="password" type="password" placeholder="Mínimo 6 caracteres" />
+      <button type="button" class="secondary-action" onclick="register()">Crear cuenta</button>
+      <p id="registerMsg" class="message"></p>
+    </section>
+  </main>
+
+  <script src="app.js?v=professional-final"></script>
+</body>
+</html>
