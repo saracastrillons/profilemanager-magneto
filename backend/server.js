@@ -900,6 +900,13 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log("Servidor corriendo en puerto " + PORT);
+app.listen(PORT, async () => {
+  console.log('Servidor listo en http://localhost:${PORT}')
+  try {
+    await db.query("SELECT 1");
+    console.log("Base de datos MySQL conectada  correctamente. ");
+  } catch (error) {
+    console.log("No se pudo conectar a MySQL:", error.message);
+  }
+
 });
