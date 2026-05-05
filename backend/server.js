@@ -12,7 +12,10 @@ const fs = require("fs");
 const cors = require("cors");
 
 const app = express();
-const PORT = Number(process.env.PORT || 3001);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log("Servidor listo en puerto " + PORT);
+});
 const uploadDir = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
