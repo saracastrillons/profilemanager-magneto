@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profile Manager Magneto</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=oldstyle-roles" />
 </head>
 <body>
   <header class="hero">
@@ -23,13 +23,14 @@
       <div>
         <p class="eyebrow">Empleabilidad inteligente</p>
         <h1>Encuentra vacantes alineadas con tu perfil profesional.</h1>
-        <p class="hero-text">Completa tu perfil, recibe recomendaciones con explicación clara y gestiona tus postulaciones en un solo lugar.</p>
+        <p class="hero-text">Completa tu perfil, recibe recomendaciones con explicación clara, postúlate y permite que las empresas publiquen oportunidades reales.</p>
       </div>
       <div class="hero-card">
         <h3>¿Qué hace el sistema?</h3>
         <ul>
+          <li>Permite registro como candidato o reclutador.</li>
           <li>Calcula coincidencia de forma transparente.</li>
-          <li>Permite cargar hoja de vida y adjuntarla a postulaciones.</li>
+          <li>Permite publicar vacantes y recibir postulaciones.</li>
           <li>Envía correos profesionales de recuperación y postulación.</li>
         </ul>
       </div>
@@ -58,11 +59,16 @@
       <input id="email" type="email" placeholder="correo@ejemplo.com" />
       <label>Contraseña</label>
       <input id="password" type="password" placeholder="Mínimo 6 caracteres" />
+      <label>Tipo de usuario</label>
+      <select id="role">
+        <option value="candidate">Candidato</option>
+        <option value="recruiter">Reclutador / Empresa</option>
+      </select>
       <button type="button" class="secondary-action" onclick="register()">Crear cuenta</button>
       <p id="registerMsg" class="message"></p>
     </section>
   </main>
 
-  <script src="app.js?v=professional-final"></script>
+  <script src="app.js?v=oldstyle-roles"></script>
 </body>
 </html>

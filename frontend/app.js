@@ -40,38 +40,49 @@ function requireFrontAuth() {
 }
 
 async function register() {
-  const name = document.getElementById("name").value.trim();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const name = document.getElementById("name")?.value.trim();
+  const email = document.getElementById("email")?.value.trim();
+  const password = document.getElementById("password")?.value.trim();
+  const role = document.getElementById("role")?.value || "candidate";
 
   if (!name || !email || !password) return setMessage("registerMsg", "Completa todos los campos.");
+
   try {
     const res = await fetch(`${API}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, role })
     });
+
     const data = await readJson(res);
     setMessage("registerMsg", data.message, res.ok);
+
+    if (res.ok) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      window.location.href = "dashboard.html";
+    }
   } catch (error) {
     setMessage("registerMsg", error.message);
   }
 }
 
 async function login() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
+  const email = document.getElementById("loginEmail")?.value.trim();
+  const password = document.getElementById("loginPassword")?.value.trim();
 
   if (!email || !password) return setMessage("loginMsg", "Ingresa correo y contraseña.");
+
   try {
     const res = await fetch(`${API}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
-    const data = await readJson(res);
 
+    const data = await readJson(res);
     if (!res.ok) return setMessage("loginMsg", data.message);
+
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
     window.location.href = "dashboard.html";
@@ -97,7 +108,47 @@ function showSection(sectionId, button) {
 function loadUserInfo() {
   const user = getUser();
   const title = document.getElementById("welcomeTitle");
+  const roleLabel = document.getElementById("roleLabel");
+
   if (title && user) title.innerText = `Hola, ${user.name}`;
+  if (roleLabel && user) roleLabel.innerText = user.role === "recruiter" ? "Panel de reclutador" : "Panel de candidato";
+}
+
+function configureDashboardByRole() {
+  if (!location.pathname.includes("dashboard.html")) return;
+
+  const user = getUser();
+  if (!user) return;
+
+  const isRecruiter = user.role === "recruiter";
+  const candidateMenu = document.getElementById("candidateMenu");
+  const recruiterMenu = document.getElementById("recruiterMenu");
+  const completionCard = document.getElementById("completionCard");
+
+  document.querySelectorAll(".candidate-only").forEach((el) => el.classList.toggle("hidden", isRecruiter));
+  document.querySelectorAll(".recruiter-only").forEach((el) => el.classList.toggle("hidden", !isRecruiter));
+
+  if (candidateMenu) candidateMenu.classList.toggle("hidden", isRecruiter);
+  if (recruiterMenu) recruiterMenu.classList.toggle("hidden", !isRecruiter);
+  if (completionCard) completionCard.classList.toggle("hidden", isRecruiter);
+
+  document.querySelectorAll(".dash-section").forEach((section) => section.classList.remove("active-section"));
+  document.querySelectorAll(".side-btn").forEach((btn) => btn.classList.remove("active"));
+
+  if (isRecruiter) {
+    document.getElementById("companySection")?.classList.add("active-section");
+    document.querySelector("#recruiterMenu .side-btn")?.classList.add("active");
+    loadCompany();
+    loadRecruiterJobs();
+  } else {
+    document.getElementById("profileSection")?.classList.add("active-section");
+    document.querySelector("#candidateMenu .side-btn")?.classList.add("active");
+    loadProfile();
+    loadRecommendations();
+    loadJobs();
+  }
+
+  loadNotifications();
 }
 
 function profilePayload() {
@@ -121,10 +172,19 @@ function profilePayload() {
 
 function updateCompletion(profile, user) {
   const fields = [
-    profile?.phone, profile?.city, profile?.profession, profile?.education,
-    profile?.years_experience, profile?.salary_min, profile?.modality,
-    profile?.seniority, profile?.availability, profile?.role_target,
-    profile?.experience, profile?.skills, user?.cv_filename
+    profile?.phone,
+    profile?.city,
+    profile?.profession,
+    profile?.education,
+    profile?.years_experience,
+    profile?.salary_min,
+    profile?.modality,
+    profile?.seniority,
+    profile?.availability,
+    profile?.role_target,
+    profile?.experience,
+    profile?.skills,
+    user?.cv_filename
   ];
 
   const completed = fields.filter((v) => v !== null && v !== undefined && String(v).trim() !== "" && String(v) !== "0").length;
@@ -141,7 +201,6 @@ async function loadProfile() {
   try {
     const res = await fetch(`${API}/profile`, { headers: { Authorization: "Bearer " + getToken() } });
     const data = await readJson(res);
-
     if (res.status === 401) return logout();
 
     const profile = data.profile || {};
@@ -179,9 +238,11 @@ async function saveProfile() {
       headers: authHeaders(),
       body: JSON.stringify(profilePayload())
     });
+
     const data = await readJson(res);
     setMessage("profileMsg", data.message, res.ok);
     await loadProfile();
+    await loadRecommendations();
   } catch (error) {
     setMessage("profileMsg", error.message);
   }
@@ -189,7 +250,7 @@ async function saveProfile() {
 
 async function uploadCV() {
   const fileInput = document.getElementById("cvFile");
-  if (!fileInput.files.length) return setMessage("cvMsg", "Selecciona un archivo PDF.");
+  if (!fileInput || !fileInput.files.length) return setMessage("cvMsg", "Selecciona un archivo PDF.");
 
   const formData = new FormData();
   formData.append("cv", fileInput.files[0]);
@@ -200,6 +261,7 @@ async function uploadCV() {
       headers: { Authorization: "Bearer " + getToken() },
       body: formData
     });
+
     const data = await readJson(res);
     setMessage("cvMsg", data.message, res.ok);
     if (res.ok) await loadProfile();
@@ -285,12 +347,14 @@ async function loadJobs() {
   if (!container) return;
 
   const params = new URLSearchParams();
-  const city = document.getElementById("filterCity")?.value;
+  const search = document.getElementById("filterSearch")?.value.trim();
+  const city = document.getElementById("filterCity")?.value.trim();
   const modality = document.getElementById("filterModality")?.value;
   const seniority = document.getElementById("filterSeniority")?.value;
-  const skill = document.getElementById("filterSkill")?.value;
+  const skill = document.getElementById("filterSkill")?.value.trim();
   const minSalary = document.getElementById("filterSalary")?.value;
 
+  if (search) params.append("search", search);
   if (city) params.append("city", city);
   if (modality) params.append("modality", modality);
   if (seniority) params.append("seniority", seniority);
@@ -302,49 +366,78 @@ async function loadJobs() {
   try {
     const res = await fetch(`${API}/jobs?${params.toString()}`, { headers: { Authorization: "Bearer " + getToken() } });
     const data = await readJson(res);
-    container.innerHTML = data.length ? data.map((job) => jobCard(job)).join("") : "<p>No hay vacantes disponibles.</p>";
+    if (!res.ok) {
+      container.innerHTML = `<p class="message">${data.message}</p>`;
+      return;
+    }
+    container.innerHTML = data.length ? data.map((job) => jobCard(job)).join("") : `<p>No hay vacantes con esos filtros.</p>`;
   } catch (error) {
     container.innerHTML = `<p class="message">${error.message}</p>`;
   }
 }
 
 async function showJobDetail(jobId) {
-  const detail = document.getElementById("recommendationDetail");
-  if (!detail) return;
-  detail.innerHTML = "<p>Cargando detalle...</p>";
+  const detailPanel = document.getElementById("recommendationDetail");
+  const modal = document.getElementById("jobModal");
+  const modalContent = document.getElementById("jobModalContent");
+
+  const target = detailPanel && document.getElementById("recommendationsSection")?.classList.contains("active-section")
+    ? detailPanel
+    : modalContent;
+
+  if (modal && target === modalContent) modal.classList.remove("hidden");
+  if (target) target.innerHTML = "<p>Cargando detalle...</p>";
 
   try {
     const res = await fetch(`${API}/job-detail/${jobId}`, { headers: { Authorization: "Bearer " + getToken() } });
     const job = await readJson(res);
-
     if (!res.ok) {
-      detail.innerHTML = `<p class="message">${job.message}</p>`;
+      if (target) target.innerHTML = `<p class="message">${job.message}</p>`;
       return;
     }
 
-    detail.innerHTML = `
-      <h3>${job.title}</h3>
-      <p><strong>Empresa:</strong> ${job.company}</p>
-      <p><strong>Ciudad:</strong> ${job.city}</p>
-      <p><strong>Modalidad:</strong> ${job.modality}</p>
-      <p><strong>Nivel:</strong> ${job.seniority}</p>
-      <p><strong>Contrato:</strong> ${job.contract_type || "No especificado"}</p>
-      <p><strong>Salario:</strong> ${salaryText(job)}</p>
-      ${job.match ? `<div class="explanation"><strong>${job.match.level} (${job.match.score}%):</strong> ${job.match.explanation}</div>` : ""}
-      <hr>
-      <h4>Descripción</h4>
-      <p>${job.description || "Sin descripción disponible."}</p>
-      <h4>Requisitos</h4>
-      <p>${job.requirements || "No especificados."}</p>
-      <h4>Beneficios</h4>
-      <p>${job.benefits || "No especificados."}</p>
-      <h4>Habilidades</h4>
-      <div class="skills">${skillsHtml(job.skills)}</div>
-      <button type="button" onclick="openApplyModal(${job.id})">Postularme</button>
-    `;
+    const reasons = job.match?.reasons?.length
+      ? job.match.reasons.map((reason) => `<li>${reason}</li>`).join("")
+      : "<li>No hay explicación disponible.</li>";
+
+    if (target) {
+      target.innerHTML = `
+        <h2>${job.title}</h2>
+        <p><strong>Empresa:</strong> ${job.company}</p>
+        <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
+        <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
+        <p><strong>Nivel:</strong> ${job.seniority || "No especificado"}</p>
+        <p><strong>Contrato:</strong> ${job.contract_type || "No especificado"}</p>
+        <p><strong>Salario:</strong> ${salaryText(job)}</p>
+        ${job.match ? `
+          <div class="explanation">
+            <strong>Coincidencia: ${job.match.score}%</strong>
+            <ul>${reasons}</ul>
+          </div>
+        ` : ""}
+        <h3>Descripción</h3>
+        <p>${job.description || "Sin descripción."}</p>
+        <h3>Requisitos</h3>
+        <p>${job.requirements || "No especificados."}</p>
+        <h3>Beneficios</h3>
+        <p>${job.benefits || "No especificados."}</p>
+        <h3>Habilidades requeridas</h3>
+        <div class="skills">${skillsHtml(job.skills)}</div>
+        ${job.company_description ? `<h3>Sobre la empresa</h3><p>${job.company_description}</p>` : ""}
+        ${job.company_website ? `<p><a href="${job.company_website}" target="_blank">Sitio web de la empresa</a></p>` : ""}
+        <div class="card-actions">
+          <button type="button" onclick="openApplyModal(${job.id})">Postularme</button>
+          <button type="button" class="outline" onclick="saveJob(${job.id})">Guardar</button>
+        </div>
+      `;
+    }
   } catch (error) {
-    detail.innerHTML = `<p class="message">${error.message}</p>`;
+    if (target) target.innerHTML = `<p class="message">${error.message}</p>`;
   }
+}
+
+function closeJobModal() {
+  document.getElementById("jobModal")?.classList.add("hidden");
 }
 
 async function saveJob(jobId) {
@@ -356,17 +449,18 @@ async function saveJob(jobId) {
     });
     const data = await readJson(res);
     alert(data.message);
+    if (res.ok) await loadSavedJobs();
   } catch (error) {
     alert(error.message);
   }
 }
 
 function openApplyModal(jobId) {
-  const message = prompt("Mensaje opcional para la empresa/reclutador:");
-  applyJob(jobId, message || "");
+  const coverMessage = prompt("Mensaje corto para la empresa. Puedes dejarlo vacío.") || "";
+  applyToJob(jobId, coverMessage);
 }
 
-async function applyJob(jobId, coverMessage = "") {
+async function applyToJob(jobId, coverMessage) {
   try {
     const res = await fetch(`${API}/apply`, {
       method: "POST",
@@ -375,9 +469,10 @@ async function applyJob(jobId, coverMessage = "") {
     });
     const data = await readJson(res);
     alert(data.message);
-    loadApplications();
-    loadEvents();
-    loadNotifications();
+    if (res.ok) {
+      await loadApplications();
+      await loadNotifications();
+    }
   } catch (error) {
     alert(error.message);
   }
@@ -405,20 +500,16 @@ async function loadApplications() {
   try {
     const res = await fetch(`${API}/applications`, { headers: { Authorization: "Bearer " + getToken() } });
     const data = await readJson(res);
-    container.innerHTML = data.length ? data.map((app) => `
-      <article class="job-card">
-        <h3>${app.title}</h3>
-        <p>${app.company}</p>
-        <div class="status status-${String(app.status).toLowerCase().replaceAll(" ", "-")}">${app.status}</div>
-        <div class="tags">
-          <span>${app.city}</span>
-          <span>${app.modality}</span>
-          <span>${app.seniority}</span>
-          <span>${salaryText(app)}</span>
-        </div>
-        <p><strong>Fecha:</strong> ${new Date(app.created_at).toLocaleString("es-CO")}</p>
-      </article>
-    `).join("") : "<p>No tienes postulaciones registradas.</p>";
+    container.innerHTML = data.length
+      ? data.map((app) => `
+        <article class="job-card">
+          <h3>${app.title}</h3>
+          <p>${app.company}</p>
+          <span class="status">${app.status}</span>
+          <div class="tags"><span>${app.modality}</span><span>${salaryText(app)}</span></div>
+        </article>
+      `).join("")
+      : "<p>No tienes postulaciones.</p>";
   } catch (error) {
     container.innerHTML = `<p class="message">${error.message}</p>`;
   }
@@ -427,19 +518,19 @@ async function loadApplications() {
 async function loadEvents() {
   const container = document.getElementById("events");
   if (!container) return;
-  container.innerHTML = "<p>Cargando historial...</p>";
 
   try {
     const res = await fetch(`${API}/events`, { headers: { Authorization: "Bearer " + getToken() } });
     const data = await readJson(res);
-    container.innerHTML = data.length ? data.map((event) => `
-      <div class="timeline-item">
-        <strong>${event.type}</strong>
-        <p>${event.description || ""}</p>
-        ${event.title ? `<p><strong>Vacante:</strong> ${event.title} - ${event.company}</p>` : ""}
-        <small>${new Date(event.created_at).toLocaleString("es-CO")}</small>
-      </div>
-    `).join("") : "<p>No hay historial registrado.</p>";
+    container.innerHTML = data.length
+      ? data.map((event) => `
+        <div class="timeline-item">
+          <strong>${event.type}</strong>
+          <p>${event.description || ""}</p>
+          <small>${event.title || ""} ${event.company ? "- " + event.company : ""}</small>
+        </div>
+      `).join("")
+      : "<p>No hay historial.</p>";
   } catch (error) {
     container.innerHTML = `<p class="message">${error.message}</p>`;
   }
@@ -448,81 +539,298 @@ async function loadEvents() {
 async function loadNotifications() {
   const container = document.getElementById("notifications");
   if (!container) return;
-  container.innerHTML = "<p>Cargando notificaciones...</p>";
 
   try {
     const res = await fetch(`${API}/notifications`, { headers: { Authorization: "Bearer " + getToken() } });
     const data = await readJson(res);
-    container.innerHTML = data.length ? data.map((item) => `
-      <div class="timeline-item">
-        <strong>${item.message}</strong>
-        <small>${new Date(item.created_at).toLocaleString("es-CO")}</small>
-      </div>
-    `).join("") : "<p>No tienes notificaciones.</p>";
+    container.innerHTML = data.length
+      ? data.map((notification) => `
+        <div class="timeline-item">
+          <p>${notification.message}</p>
+          <small>${new Date(notification.created_at).toLocaleString("es-CO")}</small>
+        </div>
+      `).join("")
+      : "<p>No hay notificaciones.</p>";
   } catch (error) {
     container.innerHTML = `<p class="message">${error.message}</p>`;
   }
 }
 
+async function loadCompany() {
+  if (getUser()?.role !== "recruiter") return;
+
+  try {
+    const res = await fetch(`${API}/company`, { headers: { Authorization: "Bearer " + getToken() } });
+    const company = await readJson(res);
+    if (!res.ok) return setMessage("companyMsg", company.message);
+
+    if (company) {
+      document.getElementById("companyName").value = company.name || "";
+      document.getElementById("companyCity").value = company.city || "";
+      document.getElementById("companyWebsite").value = company.website || "";
+      document.getElementById("companyDescription").value = company.description || "";
+      document.getElementById("jobCompany").value = company.name || "";
+    }
+    document.getElementById("jobRecruiterEmail").value = getUser()?.email || "";
+  } catch (error) {
+    setMessage("companyMsg", error.message);
+  }
+}
+
+async function saveCompany() {
+  try {
+    const payload = {
+      name: document.getElementById("companyName")?.value.trim(),
+      city: document.getElementById("companyCity")?.value.trim(),
+      website: document.getElementById("companyWebsite")?.value.trim(),
+      description: document.getElementById("companyDescription")?.value.trim()
+    };
+
+    const res = await fetch(`${API}/company`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const data = await readJson(res);
+    setMessage("companyMsg", data.message, res.ok);
+    if (res.ok) document.getElementById("jobCompany").value = payload.name;
+  } catch (error) {
+    setMessage("companyMsg", error.message);
+  }
+}
+
+async function publishJob() {
+  try {
+    const payload = {
+      title: document.getElementById("jobTitle")?.value.trim(),
+      company: document.getElementById("jobCompany")?.value.trim(),
+      city: document.getElementById("jobCity")?.value.trim(),
+      modality: document.getElementById("jobModality")?.value,
+      seniority: document.getElementById("jobSeniority")?.value,
+      contractType: document.getElementById("jobContractType")?.value.trim(),
+      area: document.getElementById("jobArea")?.value.trim(),
+      salaryMin: document.getElementById("jobSalaryMin")?.value,
+      salaryMax: document.getElementById("jobSalaryMax")?.value,
+      deadline: document.getElementById("jobDeadline")?.value,
+      recruiterEmail: document.getElementById("jobRecruiterEmail")?.value.trim(),
+      skills: document.getElementById("jobSkills")?.value.trim(),
+      description: document.getElementById("jobDescription")?.value.trim(),
+      requirements: document.getElementById("jobRequirements")?.value.trim(),
+      benefits: document.getElementById("jobBenefits")?.value.trim()
+    };
+
+    const res = await fetch(`${API}/recruiter/jobs`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const data = await readJson(res);
+    setMessage("jobMsg", data.message, res.ok);
+
+    if (res.ok) {
+      ["jobTitle", "jobCity", "jobContractType", "jobArea", "jobSalaryMin", "jobSalaryMax", "jobDeadline", "jobSkills", "jobDescription", "jobRequirements", "jobBenefits"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      await loadRecruiterJobs();
+    }
+  } catch (error) {
+    setMessage("jobMsg", error.message);
+  }
+}
+
+async function loadRecruiterJobs() {
+  const container = document.getElementById("recruiterJobs");
+  if (!container) return;
+  container.innerHTML = "<p>Cargando vacantes...</p>";
+
+  try {
+    const res = await fetch(`${API}/recruiter/jobs`, { headers: { Authorization: "Bearer " + getToken() } });
+    const data = await readJson(res);
+    if (!res.ok) {
+      container.innerHTML = `<p class="message">${data.message}</p>`;
+      return;
+    }
+
+    container.innerHTML = data.length
+      ? data.map((job) => `
+        <article class="job-card">
+          <div class="job-head">
+            <div>
+              <span class="tag">${Number(job.is_active) === 1 ? "Activa" : "Inactiva"}</span>
+              <h3>${job.title}</h3>
+              <p>${job.company}</p>
+            </div>
+            <div class="score">${job.applications_count || 0}</div>
+          </div>
+          <p>${job.description || ""}</p>
+          <div class="tags"><span>${job.city || "Ciudad"}</span><span>${job.modality || "Modalidad"}</span><span>${salaryText(job)}</span></div>
+          <div class="card-actions">
+            <button type="button" onclick="showJobDetail(${job.id})">Ver detalle</button>
+            <button type="button" onclick="loadCandidates(${job.id})">Ver candidatos</button>
+            <button type="button" class="outline" onclick="toggleJobStatus(${job.id}, ${Number(job.is_active) === 1 ? 0 : 1})">${Number(job.is_active) === 1 ? "Cerrar" : "Activar"}</button>
+          </div>
+        </article>
+      `).join("")
+      : "<p>Aún no has publicado vacantes.</p>";
+  } catch (error) {
+    container.innerHTML = `<p class="message">${error.message}</p>`;
+  }
+}
+
+async function toggleJobStatus(jobId, isActive) {
+  try {
+    const res = await fetch(`${API}/recruiter/jobs/${jobId}/status`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ isActive: Boolean(isActive) })
+    });
+    const data = await readJson(res);
+    alert(data.message);
+    if (res.ok) await loadRecruiterJobs();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function loadCandidates(jobId) {
+  showSection("recruiterCandidatesSection", document.querySelector("#recruiterMenu .side-btn:nth-child(4)"));
+  const container = document.getElementById("recruiterCandidates");
+  if (!container) return;
+  container.innerHTML = "<p>Cargando candidatos...</p>";
+
+  try {
+    const res = await fetch(`${API}/recruiter/jobs/${jobId}/applications`, { headers: { Authorization: "Bearer " + getToken() } });
+    const data = await readJson(res);
+    if (!res.ok) {
+      container.innerHTML = `<p class="message">${data.message}</p>`;
+      return;
+    }
+
+    container.innerHTML = data.length
+      ? data.map((candidate) => `
+        <article class="job-card">
+          <div class="job-head">
+            <div>
+              <span class="tag">${candidate.status}</span>
+              <h3>${candidate.candidate_name}</h3>
+              <p>${candidate.candidate_email}</p>
+            </div>
+          </div>
+          <p><strong>Ciudad:</strong> ${candidate.city || "No registrada"}</p>
+          <p><strong>Profesión:</strong> ${candidate.profession || "No registrada"}</p>
+          <p><strong>Skills:</strong> ${candidate.skills || "No registradas"}</p>
+          <p><strong>Mensaje:</strong> ${candidate.cover_message || "Sin mensaje adicional"}</p>
+          ${candidate.cv_filename ? `<p><a href="/uploads/${candidate.cv_filename}" target="_blank">Ver CV: ${candidate.cv_original_name || "CV"}</a></p>` : "<p>No hay CV adjunto.</p>"}
+          <div class="card-actions">
+            <select id="status-${candidate.application_id}">
+              <option ${candidate.status === "Postulado" ? "selected" : ""}>Postulado</option>
+              <option ${candidate.status === "En revisión" ? "selected" : ""}>En revisión</option>
+              <option ${candidate.status === "Entrevista" ? "selected" : ""}>Entrevista</option>
+              <option ${candidate.status === "Seleccionado" ? "selected" : ""}>Seleccionado</option>
+              <option ${candidate.status === "Descartado" ? "selected" : ""}>Descartado</option>
+            </select>
+            <button type="button" onclick="updateApplicationStatus(${candidate.application_id}, ${jobId})">Actualizar estado</button>
+          </div>
+        </article>
+      `).join("")
+      : "<p>Esta vacante aún no tiene candidatos.</p>";
+  } catch (error) {
+    container.innerHTML = `<p class="message">${error.message}</p>`;
+  }
+}
+
+async function updateApplicationStatus(applicationId, jobId) {
+  const status = document.getElementById(`status-${applicationId}`)?.value;
+  try {
+    const res = await fetch(`${API}/recruiter/applications/${applicationId}/status`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ status })
+    });
+    const data = await readJson(res);
+    alert(data.message);
+    if (res.ok) await loadCandidates(jobId);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+requireFrontAuth();
+loadUserInfo();
+configureDashboardByRole();
+
+/* =========================
+   RECUPERAR CONTRASEÑA
+========================= */
+
 async function forgotPassword() {
   const email = document.getElementById("forgotEmail")?.value.trim();
-  if (!email) return setMessage("forgotMsg", "Ingresa tu correo.");
+
+  if (!email) {
+    return setMessage("forgotMsg", "Ingresa tu correo electrónico.");
+  }
 
   try {
     const res = await fetch(`${API}/forgot-password`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ email })
     });
+
     const data = await readJson(res);
-    setMessage("forgotMsg", data.message, res.ok);
+
+    if (!res.ok) {
+      return setMessage("forgotMsg", data.message || "No se pudo enviar el correo.");
+    }
+
+    setMessage("forgotMsg", data.message || "Revisa tu correo.", true);
   } catch (error) {
     setMessage("forgotMsg", error.message);
   }
 }
 
+/* =========================
+   RESET PASSWORD
+========================= */
+
 async function resetPassword() {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   const password = document.getElementById("newPassword")?.value.trim();
-  if (!password) return setMessage("resetMsg", "Ingresa una nueva contraseña.");
+
+  if (!token) {
+    return setMessage("resetMsg", "El enlace no es válido.");
+  }
+
+  if (!password || password.length < 6) {
+    return setMessage("resetMsg", "La contraseña debe tener mínimo 6 caracteres.");
+  }
 
   try {
     const res = await fetch(`${API}/reset-password`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ token, password })
     });
+
     const data = await readJson(res);
-    setMessage("resetMsg", data.message, res.ok);
+
+    if (!res.ok) {
+      return setMessage("resetMsg", data.message || "No se pudo cambiar la contraseña.");
+    }
+
+    setMessage("resetMsg", "Contraseña actualizada correctamente.", true);
+
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 2000);
+
   } catch (error) {
     setMessage("resetMsg", error.message);
   }
 }
-
-window.register = register;
-window.login = login;
-window.logout = logout;
-window.showSection = showSection;
-window.saveProfile = saveProfile;
-window.uploadCV = uploadCV;
-window.loadRecommendations = loadRecommendations;
-window.loadJobs = loadJobs;
-window.showJobDetail = showJobDetail;
-window.saveJob = saveJob;
-window.openApplyModal = openApplyModal;
-window.applyJob = applyJob;
-window.loadSavedJobs = loadSavedJobs;
-window.loadApplications = loadApplications;
-window.loadEvents = loadEvents;
-window.loadNotifications = loadNotifications;
-window.forgotPassword = forgotPassword;
-window.resetPassword = resetPassword;
-
-window.addEventListener("load", () => {
-  requireFrontAuth();
-  loadUserInfo();
-  if (location.pathname.includes("dashboard.html")) {
-    loadProfile();
-  }
-});

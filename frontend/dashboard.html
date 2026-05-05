@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Profile Manager Magneto</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=oldstyle-roles" />
 </head>
 <body class="dashboard-page">
   <aside class="sidebar">
@@ -16,30 +16,42 @@
       </div>
     </div>
 
-    <button class="side-btn active" onclick="showSection('profileSection', this)">Mi perfil</button>
-    <button class="side-btn" onclick="showSection('recommendationsSection', this); loadRecommendations();">Recomendaciones</button>
-    <button class="side-btn" onclick="showSection('jobsSection', this); loadJobs();">Vacantes</button>
-    <button class="side-btn" onclick="showSection('savedSection', this); loadSavedJobs();">Guardadas</button>
-    <button class="side-btn" onclick="showSection('applicationsSection', this); loadApplications();">Postulaciones</button>
-    <button class="side-btn" onclick="showSection('historySection', this); loadEvents();">Historial</button>
-    <button class="side-btn" onclick="showSection('notificationsSection', this); loadNotifications();">Notificaciones</button>
+    <div id="candidateMenu">
+      <button class="side-btn active" onclick="showSection('profileSection', this)">Mi perfil</button>
+      <button class="side-btn" onclick="showSection('recommendationsSection', this); loadRecommendations();">Recomendaciones</button>
+      <button class="side-btn" onclick="showSection('jobsSection', this); loadJobs();">Vacantes</button>
+      <button class="side-btn" onclick="showSection('savedSection', this); loadSavedJobs();">Guardadas</button>
+      <button class="side-btn" onclick="showSection('applicationsSection', this); loadApplications();">Postulaciones</button>
+      <button class="side-btn" onclick="showSection('historySection', this); loadEvents();">Historial</button>
+      <button class="side-btn" onclick="showSection('notificationsSection', this); loadNotifications();">Notificaciones</button>
+    </div>
+
+    <div id="recruiterMenu" class="hidden">
+      <button class="side-btn active" onclick="showSection('companySection', this); loadCompany();">Empresa</button>
+      <button class="side-btn" onclick="showSection('publishJobSection', this)">Publicar vacante</button>
+      <button class="side-btn" onclick="showSection('recruiterJobsSection', this); loadRecruiterJobs();">Mis vacantes</button>
+      <button class="side-btn" onclick="showSection('recruiterCandidatesSection', this)">Candidatos</button>
+      <button class="side-btn" onclick="showSection('historySection', this); loadEvents();">Historial</button>
+      <button class="side-btn" onclick="showSection('notificationsSection', this); loadNotifications();">Notificaciones</button>
+    </div>
+
     <button class="side-btn logout" onclick="logout()">Cerrar sesión</button>
   </aside>
 
   <main class="dashboard-main">
     <header class="dashboard-header">
       <div>
-        <p class="section-label">Panel de usuario</p>
+        <p class="section-label" id="roleLabel">Panel de usuario</p>
         <h1 id="welcomeTitle">Hola</h1>
       </div>
-      <div class="completion-card">
+      <div class="completion-card" id="completionCard">
         <span>Perfil completo</span>
         <strong id="completionText">0%</strong>
         <div class="progress"><div id="progressFill"></div></div>
       </div>
     </header>
 
-    <section id="profileSection" class="dash-section active-section">
+    <section id="profileSection" class="dash-section active-section candidate-only">
       <div class="section-heading">
         <h2>Completa tu perfil profesional</h2>
         <p>Estos datos se usan para recomendaciones, postulaciones y envío de hoja de vida.</p>
@@ -81,7 +93,7 @@
       </div>
     </section>
 
-    <section id="recommendationsSection" class="dash-section">
+    <section id="recommendationsSection" class="dash-section candidate-only">
       <div class="section-heading">
         <h2>Recomendaciones explicables</h2>
         <p>El sistema compara habilidades, modalidad, ciudad, nivel y salario.</p>
@@ -92,12 +104,13 @@
       </div>
     </section>
 
-    <section id="jobsSection" class="dash-section">
+    <section id="jobsSection" class="dash-section candidate-only">
       <div class="section-heading">
         <h2>Vacantes disponibles</h2>
         <p>Usa filtros reales para encontrar oportunidades.</p>
       </div>
       <div class="card filters">
+        <input id="filterSearch" placeholder="Buscar" />
         <input id="filterCity" placeholder="Ciudad" />
         <select id="filterModality"><option value="">Modalidad</option><option>Remoto</option><option>Híbrido</option><option>Presencial</option></select>
         <select id="filterSeniority"><option value="">Nivel</option><option>Practicante</option><option>Junior</option><option>Mid</option><option>Senior</option></select>
@@ -108,14 +121,68 @@
       <div id="jobsList" class="grid-cards"></div>
     </section>
 
-    <section id="savedSection" class="dash-section">
+    <section id="savedSection" class="dash-section candidate-only">
       <div class="section-heading"><h2>Vacantes guardadas</h2><p>Oportunidades que marcaste para revisar después.</p></div>
       <div id="savedJobs" class="grid-cards"></div>
     </section>
 
-    <section id="applicationsSection" class="dash-section">
+    <section id="applicationsSection" class="dash-section candidate-only">
       <div class="section-heading"><h2>Mis postulaciones</h2><p>Seguimiento de estado de tus procesos.</p></div>
       <div id="applications" class="grid-cards"></div>
+    </section>
+
+    <section id="companySection" class="dash-section recruiter-only hidden">
+      <div class="section-heading"><h2>Perfil de empresa</h2><p>Esta información se asocia a las vacantes que publiques.</p></div>
+      <div class="card form-card">
+        <div class="form-grid">
+          <div><label>Nombre de empresa</label><input id="companyName" placeholder="Magneto Tech" /></div>
+          <div><label>Ciudad</label><input id="companyCity" placeholder="Medellín" /></div>
+          <div><label>Sitio web</label><input id="companyWebsite" placeholder="https://empresa.com" /></div>
+        </div>
+        <label>Descripción de la empresa</label>
+        <textarea id="companyDescription" placeholder="Describe brevemente la empresa"></textarea>
+        <button type="button" onclick="saveCompany()">Guardar empresa</button>
+        <p id="companyMsg" class="message"></p>
+      </div>
+    </section>
+
+    <section id="publishJobSection" class="dash-section recruiter-only hidden">
+      <div class="section-heading"><h2>Publicar nueva vacante</h2><p>La vacante quedará disponible para candidatos y recomendaciones.</p></div>
+      <div class="card form-card">
+        <div class="form-grid">
+          <div><label>Título de la vacante</label><input id="jobTitle" placeholder="Frontend Junior" /></div>
+          <div><label>Empresa</label><input id="jobCompany" placeholder="Nombre de empresa" /></div>
+          <div><label>Ciudad</label><input id="jobCity" placeholder="Medellín" /></div>
+          <div><label>Modalidad</label><select id="jobModality"><option>Remoto</option><option>Híbrido</option><option>Presencial</option></select></div>
+          <div><label>Nivel</label><select id="jobSeniority"><option>Practicante</option><option>Junior</option><option>Mid</option><option>Senior</option></select></div>
+          <div><label>Tipo de contrato</label><input id="jobContractType" placeholder="Tiempo completo" /></div>
+          <div><label>Área</label><input id="jobArea" placeholder="Tecnología" /></div>
+          <div><label>Salario mínimo</label><input id="jobSalaryMin" type="number" placeholder="2500000" /></div>
+          <div><label>Salario máximo</label><input id="jobSalaryMax" type="number" placeholder="3500000" /></div>
+          <div><label>Fecha límite</label><input id="jobDeadline" type="date" /></div>
+          <div><label>Correo del reclutador</label><input id="jobRecruiterEmail" placeholder="talento@empresa.com" /></div>
+        </div>
+        <label>Skills requeridas separadas por coma</label>
+        <textarea id="jobSkills" placeholder="HTML, CSS, JavaScript, Git"></textarea>
+        <label>Descripción</label>
+        <textarea id="jobDescription" placeholder="Describe funciones y responsabilidades"></textarea>
+        <label>Requisitos</label>
+        <textarea id="jobRequirements" placeholder="Describe requisitos"></textarea>
+        <label>Beneficios</label>
+        <textarea id="jobBenefits" placeholder="Describe beneficios"></textarea>
+        <button type="button" onclick="publishJob()">Publicar vacante</button>
+        <p id="jobMsg" class="message"></p>
+      </div>
+    </section>
+
+    <section id="recruiterJobsSection" class="dash-section recruiter-only hidden">
+      <div class="section-heading"><h2>Mis vacantes publicadas</h2><p>Gestiona vacantes, candidatos y estado de publicaciones.</p></div>
+      <div id="recruiterJobs" class="grid-cards"></div>
+    </section>
+
+    <section id="recruiterCandidatesSection" class="dash-section recruiter-only hidden">
+      <div class="section-heading"><h2>Candidatos postulados</h2><p>Selecciona una vacante desde “Mis vacantes”.</p></div>
+      <div id="recruiterCandidates" class="grid-cards"></div>
     </section>
 
     <section id="historySection" class="dash-section">
@@ -129,6 +196,13 @@
     </section>
   </main>
 
-  <script src="app.js?v=professional-final"></script>
+  <div id="jobModal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeJobModal()">×</button>
+      <div id="jobModalContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=oldstyle-roles"></script>
 </body>
 </html>
