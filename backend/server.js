@@ -13,9 +13,6 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log("Servidor listo en puerto " + PORT);
-});
 const uploadDir = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -903,12 +900,6 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
-app.listen(PORT, async () => {
-  console.log(`Servidor listo en http://localhost:${PORT}`);
-  try {
-    await db.query("SELECT 1");
-    console.log("Base de datos MySQL conectada correctamente.");
-  } catch (error) {
-    console.log("No se pudo conectar a MySQL:", error.message);
-  }
+app.listen(PORT, () => {
+  console.log("Servidor corriendo en puerto " + PORT);
 });
