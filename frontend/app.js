@@ -756,13 +756,11 @@ async function updateApplicationStatus(applicationId, jobId) {
   }
 }
 
-requireFrontAuth();
-loadUserInfo();
-configureDashboardByRole();
-
-/* =========================
-   RECUPERAR CONTRASEÑA
-========================= */
+if (location.pathname.includes("dashboard.html")) {
+  requireFrontAuth();
+  loadUserInfo();
+  configureDashboardByRole();
+}
 
 async function forgotPassword() {
   const email = document.getElementById("forgotEmail")?.value.trim();
@@ -786,15 +784,11 @@ async function forgotPassword() {
       return setMessage("forgotMsg", data.message || "No se pudo enviar el correo.");
     }
 
-    setMessage("forgotMsg", data.message || "Revisa tu correo.", true);
+    setMessage("forgotMsg", data.message || "Se envió el enlace de recuperación.", true);
   } catch (error) {
     setMessage("forgotMsg", error.message);
   }
 }
-
-/* =========================
-   RESET PASSWORD
-========================= */
 
 async function resetPassword() {
   const params = new URLSearchParams(window.location.search);
@@ -802,7 +796,7 @@ async function resetPassword() {
   const password = document.getElementById("newPassword")?.value.trim();
 
   if (!token) {
-    return setMessage("resetMsg", "El enlace no es válido.");
+    return setMessage("resetMsg", "El enlace no tiene token de recuperación.");
   }
 
   if (!password || password.length < 6) {
@@ -821,15 +815,14 @@ async function resetPassword() {
     const data = await readJson(res);
 
     if (!res.ok) {
-      return setMessage("resetMsg", data.message || "No se pudo cambiar la contraseña.");
+      return setMessage("resetMsg", data.message || "No se pudo actualizar la contraseña.");
     }
 
-    setMessage("resetMsg", "Contraseña actualizada correctamente.", true);
+    setMessage("resetMsg", data.message || "Contraseña actualizada correctamente.", true);
 
     setTimeout(() => {
       window.location.href = "index.html";
-    }, 2000);
-
+    }, 2500);
   } catch (error) {
     setMessage("resetMsg", error.message);
   }
