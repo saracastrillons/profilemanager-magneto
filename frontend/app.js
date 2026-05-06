@@ -692,17 +692,95 @@ async function loadEvents() {
     const res = await fetch(`${API}/events`, { headers: { Authorization: "Bearer " + getToken() } });
     const data = await readJson(res);
     container.innerHTML = data.length
-      ? data.map((event) => `
-        <div class="timeline-item">
-          <strong>${event.type}</strong>
-          <p>${event.description || ""}</p>
-          <small>${event.title || ""} ${event.company ? "- " + event.company : ""}</small>
+  ? data.map((event) => `
+    <div class="event-card">
+
+      <div class="event-icon ${getEventClass(event.type)}">
+        ${getEventIcon(event.type)}
+      </div>
+
+      <div class="event-content">
+
+        <div class="event-top">
+          <strong>${getEventTitle(event.type)}</strong>
+
+          <span>
+            ${
+              event.created_at
+                ? new Date(event.created_at).toLocaleString("es-CO")
+                : ""
+            }
+          </span>
         </div>
-      `).join("")
-      : "<p>No hay historial.</p>";
+
+        <p>
+          ${event.description || "Actividad registrada en la plataforma."}
+        </p>
+
+        ${
+          event.title || event.company
+            ? `
+              <small>
+                ${event.title || ""}
+                ${event.company ? " · " + event.company : ""}
+              </small>
+            `
+            : ""
+        }
+
+      </div>
+
+    </div>
+  `).join("")
+
+  : `
+    <div class="empty-state">
+      <h3>No hay historial</h3>
+      <p>
+        Cuando consultes, guardes o te postules a vacantes,
+        aparecerá aquí.
+      </p>
+    </div>
+  `;
   } catch (error) {
     container.innerHTML = `<p class="message">${error.message}</p>`;
   }
+}
+
+function getEventTitle(type) {
+  if (type === "VIEW") return "Vista de vacante";
+  if (type === "SAVE") return "Vacante guardada";
+  if (type === "APPLY") return "Postulación realizada";
+  if (type === "PROFILE_UPDATED") return "Perfil actualizado";
+  if (type === "CV_UPLOADED") return "CV cargado";
+  if (type === "JOB_CREATED") return "Vacante publicada";
+  if (type === "COMPANY_UPDATED") return "Empresa actualizada";
+  if (type === "PASSWORD_UPDATED") return "Contraseña actualizada";
+  return "Actividad registrada";
+}
+
+function getEventIcon(type) {
+  if (type === "VIEW") return "👁";
+  if (type === "SAVE") return "★";
+  if (type === "APPLY") return "✓";
+  if (type === "PROFILE_UPDATED") return "✎";
+  if (type === "CV_UPLOADED") return "CV";
+  if (type === "JOB_CREATED") return "+";
+  if (type === "COMPANY_UPDATED") return "🏢";
+  if (type === "PASSWORD_UPDATED") return "🔒";
+  return "i";
+}
+
+function getEventClass(type) {
+  if (type === "VIEW") return "event-blue";
+  if (type === "SAVE") return "event-purple";
+  if (type === "APPLY") return "event-green";
+  if (type === "PROFILE_UPDATED") return "event-orange";
+  if (type === "CV_UPLOADED") return "event-green";
+  if (type === "JOB_CREATED") return "event-purple";
+  if (type === "COMPANY_UPDATED") return "event-blue";
+  if (type === "PASSWORD_UPDATED") return "event-orange";
+  return "event-gray";
 }
 
 async function loadNotifications() {
