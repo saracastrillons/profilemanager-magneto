@@ -927,7 +927,7 @@ app.get("*", (_req, res) => {
 });
 
 app.listen(PORT, async () => {
-  console.log('Servidor listo en http://localhost:${PORT}')
+  console.log(`Servidor listo en http://localhost:${PORT}`);
   try {
     await db.query("SELECT 1");
     console.log("Base de datos MySQL conectada  correctamente. ");
