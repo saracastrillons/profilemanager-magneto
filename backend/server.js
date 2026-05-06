@@ -77,19 +77,18 @@ function appUrl() {
 }
 
 async function sendEmail({ to, subject, html, attachments = [] }) {
-  if (!process.env.RESEND_API_KEY) {
-    console.error("ERROR RESEND: falta RESEND_API_KEY.");
-    throw new Error("Falta RESEND_API_KEY.");
-  }
 
-  if (!to) {
-    console.error("ERROR RESEND: no hay destinatario.");
-    throw new Error("No hay destinatario para el correo.");
+  if (!process.env.RESEND_API_KEY || !to) {
+    return {
+      ok: false,
+      error: "Configuración de correo incompleta o destinatario vacío."
+    };
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
+
     const emailData = {
       from: process.env.EMAIL_FROM || "ProfileMatch Magneto <onboarding@resend.dev>",
       to,
@@ -97,31 +96,51 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
       html
     };
 
-    if (attachments && attachments.length > 0) {
+    if (attachments.length > 0) {
+
       emailData.attachments = attachments
-        .filter((file) => file.path && fs.existsSync(file.path))
-        .map((file) => ({
+        .filter(file => file.path && fs.existsSync(file.path))
+        .map(file => ({
           filename: file.filename,
           content: fs.readFileSync(file.path).toString("base64")
         }));
+
     }
 
     const result = await resend.emails.send(emailData);
 
-    console.log("Correo enviado con Resend:", result);
-    return result;
-  } catch (error) {
-    console.error("ERROR RESEND DETALLADO:", {
-      message: error.message,
-      name: error.name,
-      statusCode: error.statusCode,
-      response: error.response
-    });
+    if (result.error) {
 
-    throw error;
+      console.log("Correo no enviado:", result.error.message);
+
+      return {
+        ok: false,
+        error: result.error.message
+      };
+
+    }
+
+    console.log("Correo enviado:", result.data);
+
+    return {
+      ok: true,
+      data: result.data
+    };
+
+  } catch (error) {
+
+    console.log("Correo no enviado:", error.message);
+
+    return {
+      ok: false,
+      error: error.message
+    };
+
   }
+
 }
 
+  
 function generateToken(user) {
   return jwt.sign(
     {
@@ -251,7 +270,10 @@ async function addEvent(userId, jobId, type, description) {
 
 async function addNotification(userId, message, title = "Notificación", type = "info", link = null) {
   await db.query(
-    "INSERT INTO notifications (user_id, title, message, type, link, is_read) VALUES (?, ?, ?, ?, ?, FALSE)",
+    `
+    INSERT INTO notifications (user_id, title, message, type, link, is_read)
+    VALUES (?, ?, ?, ?, ?, FALSE)
+    `,
     [userId, title, message, type, link]
   );
 }
@@ -412,7 +434,13 @@ app.post("/api/upload-cv", requireAuth, upload.single("cv"), async (req, res) =>
     ]);
 
     await addEvent(req.user.id, null, "CV_UPLOADED", "Subió o reemplazó su hoja de vida.");
-    await addNotification(req.user.id, "Tu hoja de vida fue cargada correctamente.");
+    await addNotification(
+      req.user.id,
+      "Tu hoja de vida fue cargada correctamente y quedará disponible para tus postulaciones.",
+      "CV cargado",
+      "success",
+      "/dashboard.html#profile"
+    );
     res.json({ message: "CV subido correctamente." });
   } catch (error) {
     console.error("Error upload cv:", error);
@@ -503,7 +531,13 @@ app.post("/api/save-job", requireAuth, async (req, res) => {
     const { jobId } = req.body;
     await db.query("INSERT IGNORE INTO saved_jobs (user_id, job_id) VALUES (?, ?)", [req.user.id, jobId]);
     await addEvent(req.user.id, jobId, "SAVE", "Guardó una vacante.");
-    await addNotification(req.user.id, "Guardaste una vacante para revisarla después.");
+    await addNotification(
+      req.user.id,
+      "Guardaste una vacante para revisarla después.",
+      "Vacante guardada",
+      "info",
+      "/dashboard.html#saved"
+    );
     res.json({ message: "Vacante guardada correctamente." });
   } catch (error) {
     console.error("Error save job:", error);
@@ -590,7 +624,7 @@ app.post("/api/apply", requireAuth, async (req, res) => {
         `${candidate.name} se postuló a la vacante ${job.title}.`,
         "Nuevo candidato",
         "application",
-        "/dashboard.html#recruiter"
+        "/dashboard.html#recruiterCandidates"
       );
     }
 
@@ -607,96 +641,43 @@ app.post("/api/apply", requireAuth, async (req, res) => {
       }
     }
 
-    await sendEmail({
+    const candidateEmailResult = await sendEmail({
       to: candidate.email,
       subject: `Postulación enviada - ${job.title}`,
-      html: `
-        <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
-          <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
-            <div style="background:#4f46e5;padding:24px;color:white;">
-              <h1 style="margin:0;font-size:24px;">Postulación enviada correctamente</h1>
-              <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
-            </div>
-
-            <div style="padding:26px;">
-              <p>Hola <strong>${candidate.name}</strong>,</p>
-              <p>Tu postulación fue registrada exitosamente.</p>
-
-              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
-                <p><strong>Vacante:</strong> ${job.title}</p>
-                <p><strong>Empresa:</strong> ${job.company}</p>
-                <p><strong>Estado inicial:</strong> Postulado</p>
-                <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
-                <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
-              </div>
-
-              <p style="font-size:14px;color:#4b5563;">
-                Puedes hacer seguimiento a tu proceso desde el tablero de postulaciones.
-              </p>
-
-              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-
-              <p style="font-size:12px;color:#6b7280;margin:0;">
-                Este correo fue generado automáticamente por ProfileMatch Magneto.
-              </p>
-            </div>
-          </div>
-        </div>
-      `
+      html: candidateHtml
     });
+    
+    if (!candidateEmailResult.ok) {
+      await addNotification(
+        req.user.id,
+        "La postulación fue registrada correctamente. El correo externo no se pudo enviar porque el proveedor requiere dominio verificado.",
+        "Correo no enviado",
+        "warning",
+        "/dashboard.html#applications"
+      );
+    }
 
     const recruiterEmail = job.recruiter_email;
 
     console.log("Correo del reclutador:", recruiterEmail);
 
     if (recruiterEmail) {
-      await sendEmail({
+      const recruiterEmailResult = await sendEmail({
         to: recruiterEmail,
         subject: `Nueva postulación - ${job.title}`,
-        html: `
-          <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
-            <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
-              <div style="background:#4f46e5;padding:24px;color:white;">
-                <h1 style="margin:0;font-size:24px;">Nueva postulación recibida</h1>
-                <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
-              </div>
-
-              <div style="padding:26px;">
-                <p style="font-size:16px;margin-top:0;">
-                  Hola ${job.recruiter_name || "reclutador"}, recibiste una nueva postulación.
-                </p>
-
-                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
-                  <p><strong>Vacante:</strong> ${job.title}</p>
-                  <p><strong>Empresa:</strong> ${job.company}</p>
-                  <p><strong>Candidato:</strong> ${candidate.name}</p>
-                  <p><strong>Correo:</strong> <a href="mailto:${candidate.email}">${candidate.email}</a></p>
-                  <p><strong>Ciudad:</strong> ${profile?.city || "No registrada"}</p>
-                  <p><strong>Perfil:</strong> ${profile?.profession || "No registrado"}</p>
-                  <p><strong>Experiencia:</strong> ${profile?.years_experience || 0} años</p>
-                  <p><strong>Skills:</strong> ${profile?.skills || "No registradas"}</p>
-                  <p><strong>Mensaje:</strong> ${coverMessage || "Sin mensaje adicional."}</p>
-                </div>
-
-                <p style="font-size:14px;color:#4b5563;">
-                  ${
-                    attachments.length > 0
-                      ? "La hoja de vida del candidato se adjunta a este correo."
-                      : "El candidato aún no tiene hoja de vida cargada en la plataforma."
-                  }
-                </p>
-
-                <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-
-                <p style="font-size:12px;color:#6b7280;margin:0;">
-                  Este correo fue generado automáticamente por ProfileMatch Magneto.
-                </p>
-              </div>
-            </div>
-          </div>
-        `,
+        html: recruiterHtml,
         attachments
       });
+      
+      if (!recruiterEmailResult.ok && job.created_by) {
+        await addNotification(
+          job.created_by,
+          `${candidate.name} se postuló a ${job.title}. Puedes revisar la postulación desde tu panel.`,
+          "Nuevo candidato",
+          "application",
+          "/dashboard.html#recruiterCandidates"
+        );
+      }
     } else {
       console.log("No se envió correo al reclutador porque la vacante no tiene recruiter_email ni created_by válido.");
     }
@@ -1082,7 +1063,13 @@ app.post("/api/reset-password", async (req, res) => {
     await db.query("DELETE FROM password_resets WHERE token = ?", [token]);
 
     await addEvent(rows[0].user_id, null, "PASSWORD_UPDATED", "Actualizó su contraseña.");
-    await addNotification(rows[0].user_id, "Tu contraseña fue actualizada correctamente.");
+    await addNotification(
+      rows[0].user_id,
+      "Tu contraseña fue actualizada correctamente.",
+      "Contraseña actualizada",
+      "security",
+      "/dashboard.html#notifications"
+    );
     res.json({ message: "Contraseña actualizada correctamente. Ya puedes iniciar sesión." });
   } catch (error) {
     console.error("Error reset password:", error);

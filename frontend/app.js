@@ -595,11 +595,14 @@ async function loadNotifications() {
             </div>
 
             <p>${n.message || ""}</p>
+            <span class="notification-type">${getNotificationTypeLabel(n.type)}</span>
 
             <div class="notification-buttons">
               ${
                 n.link
-                  ? `<button type="button" onclick="openNotification(${n.id}, '${n.link}')">Ver detalle</button>`
+                  ? `<button type="button" class="detail-btn" onclick="openNotification(${n.id}, '${n.link}')">
+  Ver detalle
+</button>`
                   : ""
               }
 
@@ -633,8 +636,18 @@ function getNotificationIcon(type) {
   if (type === "success") return "✓";
   if (type === "application") return "👤";
   if (type === "status") return "↻";
+  if (type === "security") return "🔒";
   if (type === "warning") return "!";
   return "i";
+}
+
+function getNotificationTypeLabel(type) {
+  if (type === "success") return "Postulación";
+  if (type === "application") return "Reclutador";
+  if (type === "status") return "Estado";
+  if (type === "security") return "Seguridad";
+  if (type === "warning") return "Alerta";
+  return "Sistema";
 }
 
 function formatNotificationDate(dateValue) {
@@ -682,8 +695,45 @@ async function deleteNotification(id) {
 async function openNotification(id, link) {
   await markNotificationRead(id);
 
-  if (link) {
-    window.location.href = link;
+  if (!link) return;
+
+  const sectionByHash = {
+    "#applications": "applicationsSection",
+    "#saved": "savedSection",
+    "#profile": "profileSection",
+    "#notifications": "notificationsSection",
+    "#recruiterCandidates": "recruiterCandidatesSection",
+    "#recruiter": "recruiterJobsSection"
+  };
+
+  const hash = link.includes("#") ? link.substring(link.indexOf("#")) : link;
+  const sectionId = sectionByHash[hash];
+
+  if (sectionId) {
+    const section = document.getElementById(sectionId);
+
+    document.querySelectorAll(".dash-section").forEach((s) => {
+      s.classList.remove("active-section");
+    });
+
+    section?.classList.add("active-section");
+
+    document.querySelectorAll(".side-btn").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+
+    const menuButton = Array.from(document.querySelectorAll(".side-btn")).find((btn) =>
+      btn.getAttribute("onclick")?.includes(sectionId)
+    );
+
+    menuButton?.classList.add("active");
+
+    if (sectionId === "applicationsSection") loadApplications();
+    if (sectionId === "savedSection") loadSavedJobs();
+    if (sectionId === "profileSection") loadProfile();
+    if (sectionId === "recruiterJobsSection") loadRecruiterJobs();
+
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
