@@ -16,6 +16,22 @@ function setMessage(id, text, ok = false) {
   }
 }
 
+function showToast(message, type = "success") {
+
+  const toast = document.getElementById("toast");
+
+  if (!toast) return;
+
+  toast.textContent = message;
+
+  toast.className = `toast ${type}`;
+
+  setTimeout(() => {
+    toast.className = "toast hidden";
+  }, 3000);
+
+}
+
 function authHeaders() {
   return {
     "Content-Type": "application/json",
@@ -511,10 +527,10 @@ async function saveJob(jobId) {
       body: JSON.stringify({ jobId })
     });
     const data = await readJson(res);
-    alert(data.message);
+    showToast(data.message, "success");
     if (res.ok) await loadSavedJobs();
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
@@ -531,13 +547,13 @@ async function applyToJob(jobId, coverMessage) {
       body: JSON.stringify({ jobId, coverMessage })
     });
     const data = await readJson(res);
-    alert(data.message);
+    showToast(data.message, "success");
     if (res.ok) {
       await loadApplications();
       await loadNotifications();
     }
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
@@ -971,10 +987,10 @@ async function toggleJobStatus(jobId, isActive) {
       body: JSON.stringify({ isActive: Boolean(isActive) })
     });
     const data = await readJson(res);
-    alert(data.message);
+    showToast(data.message, "success");
     if (res.ok) await loadRecruiterJobs();
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
@@ -1036,10 +1052,10 @@ async function updateApplicationStatus(applicationId, jobId) {
       body: JSON.stringify({ status })
     });
     const data = await readJson(res);
-    alert(data.message);
+    showToast(data.message, "success");
     if (res.ok) await loadCandidates(jobId);
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
