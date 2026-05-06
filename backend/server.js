@@ -641,6 +641,39 @@ app.post("/api/apply", requireAuth, async (req, res) => {
       }
     }
 
+    const candidateHtml = `
+  <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
+    <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+      <div style="background:#4f46e5;padding:24px;color:white;">
+        <h1 style="margin:0;font-size:24px;">Postulación enviada correctamente</h1>
+        <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
+      </div>
+
+      <div style="padding:26px;">
+        <p>Hola <strong>${candidate.name}</strong>,</p>
+        <p>Tu postulación fue registrada exitosamente.</p>
+
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
+          <p><strong>Vacante:</strong> ${job.title}</p>
+          <p><strong>Empresa:</strong> ${job.company}</p>
+          <p><strong>Estado inicial:</strong> Postulado</p>
+          <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
+          <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
+        </div>
+
+        <p style="font-size:14px;color:#4b5563;">
+          Puedes hacer seguimiento a tu proceso desde el tablero de postulaciones.
+        </p>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+
+        <p style="font-size:12px;color:#6b7280;margin:0;">
+          Este correo fue generado automáticamente por ProfileMatch Magneto.
+        </p>
+      </div>
+    </div>
+  </div>
+`;
     const candidateEmailResult = await sendEmail({
       to: candidate.email,
       subject: `Postulación enviada - ${job.title}`,
@@ -656,7 +689,47 @@ app.post("/api/apply", requireAuth, async (req, res) => {
         "/dashboard.html#applications"
       );
     }
-
+    const recruiterHtml = `
+    <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+        <div style="background:#4f46e5;padding:24px;color:white;">
+          <h1 style="margin:0;font-size:24px;">Nueva postulación recibida</h1>
+          <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
+        </div>
+  
+        <div style="padding:26px;">
+          <p>Hola ${job.recruiter_name || "reclutador"},</p>
+          <p>Recibiste una nueva postulación para una de tus vacantes.</p>
+  
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
+            <p><strong>Vacante:</strong> ${job.title}</p>
+            <p><strong>Empresa:</strong> ${job.company}</p>
+            <p><strong>Candidato:</strong> ${candidate.name}</p>
+            <p><strong>Correo:</strong> <a href="mailto:${candidate.email}">${candidate.email}</a></p>
+            <p><strong>Ciudad:</strong> ${profile?.city || "No registrada"}</p>
+            <p><strong>Perfil:</strong> ${profile?.profession || "No registrado"}</p>
+            <p><strong>Experiencia:</strong> ${profile?.years_experience || 0} años</p>
+            <p><strong>Skills:</strong> ${profile?.skills || "No registradas"}</p>
+            <p><strong>Mensaje:</strong> ${coverMessage || "Sin mensaje adicional."}</p>
+          </div>
+  
+          <p style="font-size:14px;color:#4b5563;">
+            ${
+              attachments.length > 0
+                ? "La hoja de vida del candidato se adjunta a este correo."
+                : "El candidato aún no tiene hoja de vida cargada en la plataforma."
+            }
+          </p>
+  
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  
+          <p style="font-size:12px;color:#6b7280;margin:0;">
+            Este correo fue generado automáticamente por ProfileMatch Magneto.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
     const recruiterEmail = job.recruiter_email;
 
     console.log("Correo del reclutador:", recruiterEmail);
@@ -853,8 +926,14 @@ app.post("/api/recruiter/jobs", requireAuth, requireRecruiter, async (req, res) 
       deadline
     } = req.body;
 
-    if (!title || !company || !description) {
-      return res.status(400).json({ message: "Título, empresa y descripción son obligatorios." });
+    if (
+      !title?.trim() ||
+      !company?.trim() ||
+      !description?.trim()
+    ) {
+      return res.status(400).json({
+        message: "Completa los campos obligatorios: título, empresa y descripción de la vacante."
+      });
     }
 
     const [companyRows] = await db.query("SELECT id FROM companies WHERE user_id = ?", [req.user.id]);

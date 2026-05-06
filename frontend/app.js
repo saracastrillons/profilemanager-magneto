@@ -402,34 +402,75 @@ async function showJobDetail(jobId) {
 
     if (target) {
       target.innerHTML = `
+  <div class="job-detail-card">
+    <div class="job-detail-header">
+      <div>
+        <span class="tag">${job.modality || "Modalidad no definida"}</span>
         <h2>${job.title}</h2>
-        <p><strong>Empresa:</strong> ${job.company}</p>
-        <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
-        <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
-        <p><strong>Nivel:</strong> ${job.seniority || "No especificado"}</p>
-        <p><strong>Contrato:</strong> ${job.contract_type || "No especificado"}</p>
-        <p><strong>Salario:</strong> ${salaryText(job)}</p>
-        ${job.match ? `
-          <div class="explanation">
-            <strong>Coincidencia: ${job.match.score}%</strong>
-            <ul>${reasons}</ul>
+        <p>${job.company}</p>
+      </div>
+
+      ${
+        job.match
+          ? `<div class="score ${scoreClass(job.match.score)}">${job.match.score}%</div>`
+          : ""
+      }
+    </div>
+
+    <div class="job-detail-info">
+      <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
+      <p><strong>Nivel:</strong> ${job.seniority || "No especificado"}</p>
+      <p><strong>Contrato:</strong> ${job.contract_type || "No especificado"}</p>
+      <p><strong>Salario:</strong> ${salaryText(job)}</p>
+    </div>
+
+    ${
+      job.match
+        ? `
+          <div class="match-box">
+            <h3>${job.match.level}</h3>
+            <ul>
+              ${
+                job.match.reasons?.length
+                  ? job.match.reasons.map((reason) => `<li>${reason}</li>`).join("")
+                  : "<li>No hay explicación disponible.</li>"
+              }
+            </ul>
           </div>
-        ` : ""}
-        <h3>Descripción</h3>
-        <p>${job.description || "Sin descripción."}</p>
-        <h3>Requisitos</h3>
-        <p>${job.requirements || "No especificados."}</p>
-        <h3>Beneficios</h3>
-        <p>${job.benefits || "No especificados."}</p>
-        <h3>Habilidades requeridas</h3>
-        <div class="skills">${skillsHtml(job.skills)}</div>
-        ${job.company_description ? `<h3>Sobre la empresa</h3><p>${job.company_description}</p>` : ""}
-        ${job.company_website ? `<p><a href="${job.company_website}" target="_blank">Sitio web de la empresa</a></p>` : ""}
-        <div class="card-actions">
-          <button type="button" onclick="openApplyModal(${job.id})">Postularme</button>
-          <button type="button" class="outline" onclick="saveJob(${job.id})">Guardar</button>
-        </div>
-      `;
+        `
+        : ""
+    }
+
+    <h3>Habilidades requeridas</h3>
+    <div class="skills">${skillsHtml(job.skills)}</div>
+
+    <h3>Descripción</h3>
+    <p>${job.description || "Sin descripción registrada."}</p>
+
+    <h3>Requisitos</h3>
+    <p>${job.requirements || "No especificados."}</p>
+
+    <h3>Beneficios</h3>
+    <p>${job.benefits || "No especificados."}</p>
+
+    ${
+      job.company_description
+        ? `<h3>Sobre la empresa</h3><p>${job.company_description}</p>`
+        : ""
+    }
+
+    ${
+      job.company_website
+        ? `<p><a href="${job.company_website}" target="_blank">Visitar sitio web de la empresa</a></p>`
+        : ""
+    }
+
+    <div class="card-actions">
+      <button type="button" onclick="openApplyModal(${job.id})">Postularme</button>
+      <button type="button" class="outline" onclick="saveJob(${job.id})">Guardar vacante</button>
+    </div>
+  </div>
+`;
     }
   } catch (error) {
     if (target) target.innerHTML = `<p class="message">${error.message}</p>`;
