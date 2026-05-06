@@ -301,6 +301,18 @@ function scoreClass(score) {
   return "score-low";
 }
 
+function getCompatibilityLabel(score) {
+  if (score >= 80) return "Alta compatibilidad";
+  if (score >= 55) return "Compatibilidad media";
+  return "Compatibilidad baja";
+}
+
+function getCompatibilityClass(score) {
+  if (score >= 80) return "compatibility-high";
+  if (score >= 55) return "compatibility-medium";
+  return "compatibility-low";
+}
+
 function skillsHtml(skills) {
   return String(skills || "")
     .split(",")
@@ -320,7 +332,18 @@ function jobCard(job, explain = false) {
           <h3>${job.title}</h3>
           <p>${job.company}</p>
         </div>
-        ${score !== null ? `<div class="score ${scoreClass(score)}">${score}%</div>` : ""}
+        ${
+          score !== null
+            ? `
+              <div class="score-box">
+                <div class="score ${scoreClass(score)}">${score}%</div>
+                <span class="compatibility-tag ${getCompatibilityClass(score)}">
+                  ${getCompatibilityLabel(score)}
+                </span>
+              </div>
+            `
+            : ""
+        }
       </div>
       <p>${job.description || ""}</p>
       <div class="tags">
