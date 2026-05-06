@@ -534,9 +534,58 @@ async function saveJob(jobId) {
   }
 }
 
-function openApplyModal(jobId) {
-  const coverMessage = prompt("Mensaje corto para la empresa. Puedes dejarlo vacío.") || "";
-  applyToJob(jobId, coverMessage);
+let selectedJobToApply = null;
+
+async function openApplyModal(jobId) {
+  selectedJobToApply = jobId;
+
+  const modal = document.getElementById("applyModal");
+  const summary = document.getElementById("applyJobSummary");
+  const message = document.getElementById("applyCoverMessage");
+
+  if (message) message.value = "";
+
+  if (summary) {
+    summary.innerHTML = "Cargando información de la vacante...";
+  }
+
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+
+  try {
+    const res = await fetch(`${API}/job-detail/${jobId}`, {
+      headers: { Authorization: "Bearer " + getToken() }
+    });
+
+    const job = await readJson(res);
+
+    if (summary && res.ok) {
+      summary.innerHTML = `
+        <strong>${job.title}</strong>
+        <span>${job.company}</span>
+        <small>${job.city || "Ciudad no especificada"} · ${job.modality || "Modalidad no especificada"}</small>
+      `;
+    }
+  } catch {
+    if (summary) {
+      summary.innerHTML = "No se pudo cargar el resumen de la vacante.";
+    }
+  }
+}
+
+function closeApplyModal() {
+  selectedJobToApply = null;
+  document.getElementById("applyModal")?.classList.add("hidden");
+}
+
+async function submitApplyModal() {
+  if (!selectedJobToApply) return;
+
+  const coverMessage = document.getElementById("applyCoverMessage")?.value.trim() || "";
+
+  await applyToJob(selectedJobToApply, coverMessage);
+  closeApplyModal();
 }
 
 async function applyToJob(jobId, coverMessage) {

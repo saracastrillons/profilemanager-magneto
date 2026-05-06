@@ -237,6 +237,32 @@
       <div id="jobModalContent"></div>
     </div>
   </div>
+  <div id="applyModal" class="modal hidden">
+    <div class="apply-modal-content">
+      <button class="modal-close" onclick="closeApplyModal()">×</button>
+  
+      <div class="apply-modal-header">
+        <span class="section-label">Postulación</span>
+        <h2>Enviar postulación</h2>
+        <p>Escribe un mensaje breve para presentarte ante la empresa.</p>
+      </div>
+  
+      <div class="apply-job-summary" id="applyJobSummary">
+        Selecciona una vacante para postularte.
+      </div>
+  
+      <label>Mensaje para la empresa</label>
+      <textarea
+        id="applyCoverMessage"
+        placeholder="Hola, estoy interesada en esta vacante porque considero que mi perfil se ajusta a los requisitos..."
+      ></textarea>
+  
+      <div class="apply-actions">
+        <button type="button" class="outline" onclick="closeApplyModal()">Cancelar</button>
+        <button type="button" onclick="submitApplyModal()">Enviar postulación</button>
+      </div>
+    </div>
+  </div>
   <div id="toast" class="toast hidden"></div>
   <script src="app.js?v=oldstyle-roles"></script>
 </body>

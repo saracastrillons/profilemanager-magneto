@@ -439,3 +439,72 @@
     }
   
   }
+
+  .apply-modal-content {
+    background: #ffffff;
+    width: min(560px, 92vw);
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+    position: relative;
+  }
+  
+  .apply-modal-header h2 {
+    margin: 8px 0 6px;
+    color: #111827;
+    font-size: 28px;
+  }
+  
+  .apply-modal-header p {
+    margin: 0 0 20px;
+    color: #6b7280;
+  }
+  
+  .apply-job-summary {
+    background: #f8faff;
+    border: 1px solid #c7d2fe;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 18px;
+    display: grid;
+    gap: 4px;
+  }
+  
+  .apply-job-summary strong {
+    color: #111827;
+    font-size: 17px;
+  }
+  
+  .apply-job-summary span {
+    color: #4b5563;
+    font-weight: 700;
+  }
+  
+  .apply-job-summary small {
+    color: #6b7280;
+  }
+  
+  #applyCoverMessage {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    border-radius: 14px;
+    border: 1px solid #d1d5db;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 15px;
+    margin-top: 8px;
+  }
+  
+  #applyCoverMessage:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+  }
+  
+  .apply-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+  }
