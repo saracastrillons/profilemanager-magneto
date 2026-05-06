@@ -72,23 +72,33 @@ const upload = multer({
   }
 });
 
-function appUrl() {
-  return process.env.APP_URL || `http://localhost:${PORT}`;
+function appUrl(req) {
+  const envUrl = (process.env.APP_URL || "").trim();
+
+  if (envUrl) {
+    return envUrl.startsWith("http") ? envUrl : `https://${envUrl}`;
+  }
+
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+
+  return `${protocol}://${host}`;
 }
 
 async function sendEmail({ to, subject, html, attachments = [] }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log("Correo no enviado: falta RESEND_API_KEY.");
+    return { ok: false, error: "Falta RESEND_API_KEY." };
+  }
 
-  if (!process.env.RESEND_API_KEY || !to) {
-    return {
-      ok: false,
-      error: "Configuración de correo incompleta o destinatario vacío."
-    };
+  if (!to) {
+    console.log("Correo no enviado: no hay destinatario.");
+    return { ok: false, error: "No hay destinatario." };
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-
     const emailData = {
       from: process.env.EMAIL_FROM || "ProfileMatch Magneto <onboarding@resend.dev>",
       to,
@@ -97,47 +107,27 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     };
 
     if (attachments.length > 0) {
-
       emailData.attachments = attachments
-        .filter(file => file.path && fs.existsSync(file.path))
-        .map(file => ({
+        .filter((file) => file.path && fs.existsSync(file.path))
+        .map((file) => ({
           filename: file.filename,
           content: fs.readFileSync(file.path).toString("base64")
         }));
-
     }
 
     const result = await resend.emails.send(emailData);
 
     if (result.error) {
-
       console.log("Correo no enviado:", result.error.message);
-
-      return {
-        ok: false,
-        error: result.error.message
-      };
-
+      return { ok: false, error: result.error.message };
     }
 
     console.log("Correo enviado:", result.data);
-
-    return {
-      ok: true,
-      data: result.data
-    };
-
+    return { ok: true, data: result.data };
   } catch (error) {
-
     console.log("Correo no enviado:", error.message);
-
-    return {
-      ok: false,
-      error: error.message
-    };
-
+    return { ok: false, error: error.message };
   }
-
 }
 
   
@@ -679,6 +669,7 @@ app.post("/api/apply", requireAuth, async (req, res) => {
       subject: `Postulación enviada - ${job.title}`,
       html: candidateHtml
     });
+
     
     if (!candidateEmailResult.ok) {
       await addNotification(
@@ -730,28 +721,26 @@ app.post("/api/apply", requireAuth, async (req, res) => {
       </div>
     </div>
   `;
-    const recruiterEmail = job.recruiter_email;
+   const recruiterEmail = job.recruiter_email;
 
-    console.log("Correo del reclutador:", recruiterEmail);
+if (recruiterEmail) {
+  const recruiterEmailResult = await sendEmail({
+    to: recruiterEmail,
+    subject: `Nueva postulación - ${job.title}`,
+    html: recruiterHtml,
+    attachments
+  });
 
-    if (recruiterEmail) {
-      const recruiterEmailResult = await sendEmail({
-        to: recruiterEmail,
-        subject: `Nueva postulación - ${job.title}`,
-        html: recruiterHtml,
-        attachments
-      });
-      
-      if (!recruiterEmailResult.ok && job.created_by) {
-        await addNotification(
-          job.created_by,
-          `${candidate.name} se postuló a ${job.title}. Puedes revisar la postulación desde tu panel.`,
-          "Nuevo candidato",
-          "application",
-          "/dashboard.html#recruiterCandidates"
-        );
-      }
-    } else {
+  if (!recruiterEmailResult.ok && job.created_by) {
+    await addNotification(
+      job.created_by,
+      `${candidate.name} se postuló a ${job.title}. Puedes revisar la postulación desde tu panel.`,
+      "Nuevo candidato",
+      "application",
+      "/dashboard.html#recruiterCandidates"
+    );
+  }
+} else {
       console.log("No se envió correo al reclutador porque la vacante no tiene recruiter_email ni created_by válido.");
     }
 
@@ -1109,7 +1098,7 @@ app.post("/api/forgot-password", async (req, res) => {
     await db.query("DELETE FROM password_resets WHERE user_id = ?", [user.id]);
     await db.query("INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)", [user.id, token, expiresAt]);
 
-    const resetLink = `${appUrl()}/reset-password.html?token=${token}`;
+    const resetLink = `${appUrl(req)}/reset-password.html?token=${token}`;
     await sendEmail({
       to: user.email,
       subject: "Recuperación de contraseña - Profile Manager Magneto",
