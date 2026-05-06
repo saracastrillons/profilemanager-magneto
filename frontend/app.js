@@ -576,6 +576,24 @@ function getApplicationStatusClass(status) {
       return "status-gray";
   }
 }
+
+function getApplicationStatusClass(status) {
+  switch (status) {
+    case "Postulado":
+      return "status-blue";
+    case "En revisión":
+      return "status-yellow";
+    case "Entrevista":
+      return "status-purple";
+    case "Seleccionado":
+      return "status-green";
+    case "Descartado":
+      return "status-red";
+    default:
+      return "status-gray";
+  }
+}
+
 async function loadApplications() {
   const container = document.getElementById("applications");
   if (!container) return;
@@ -589,7 +607,9 @@ async function loadApplications() {
         <article class="job-card">
           <h3>${app.title}</h3>
           <p>${app.company}</p>
-          <span class="status-badge ${getApplicationStatusClass(app.status)}">${app.status}</span>
+          <span class="status-badge ${getApplicationStatusClass(app.status)}">
+  ${app.status}
+</span>
           <div class="tags"><span>${app.modality}</span><span>${salaryText(app)}</span></div>
         </article>
       `).join("")
