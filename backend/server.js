@@ -249,8 +249,11 @@ async function addEvent(userId, jobId, type, description) {
   );
 }
 
-async function addNotification(userId, message) {
-  await db.query("INSERT INTO notifications (user_id, message) VALUES (?, ?)", [userId, message]);
+async function addNotification(userId, message, title = "Notificación", type = "info", link = null) {
+  await db.query(
+    "INSERT INTO notifications (user_id, title, message, type, link, is_read) VALUES (?, ?, ?, ?, ?, FALSE)",
+    [userId, title, message, type, link]
+  );
 }
 
 async function getUserById(id) {
@@ -530,129 +533,182 @@ app.get("/api/saved-jobs", requireAuth, async (req, res) => {
 app.post("/api/apply", requireAuth, async (req, res) => {
   try {
     const { jobId, coverMessage = "" } = req.body;
-    const [jobs] = await db.query("SELECT * FROM jobs WHERE id = ?", [jobId]);
-    if (!jobs.length) return res.status(404).json({ message: "Vacante no encontrada." });
+
+    const [jobs] = await db.query(
+      `
+      SELECT 
+        jobs.*,
+        COALESCE(NULLIF(jobs.recruiter_email, ''), recruiter.email) AS recruiter_email,
+        recruiter.name AS recruiter_name
+      FROM jobs
+      LEFT JOIN users AS recruiter ON jobs.created_by = recruiter.id
+      WHERE jobs.id = ?
+      `,
+      [jobId]
+    );
+
+    if (!jobs.length) {
+      return res.status(404).json({ message: "Vacante no encontrada." });
+    }
+
     const job = jobs[0];
 
-    const [existing] = await db.query("SELECT id FROM applications WHERE user_id = ? AND job_id = ?", [req.user.id, jobId]);
-    if (existing.length) return res.status(400).json({ message: "Ya te postulaste a esta vacante." });
+    const [existing] = await db.query(
+      "SELECT id FROM applications WHERE user_id = ? AND job_id = ?",
+      [req.user.id, jobId]
+    );
+
+    if (existing.length) {
+      return res.status(400).json({ message: "Ya te postulaste a esta vacante." });
+    }
 
     await db.query(
       "INSERT INTO applications (user_id, job_id, status, cover_message) VALUES (?, ?, ?, ?)",
       [req.user.id, jobId, "Postulado", coverMessage]
     );
 
-    const [users] = await db.query("SELECT name, email, cv_filename, cv_original_name FROM users WHERE id = ?", [req.user.id]);
+    const [users] = await db.query(
+      "SELECT name, email, cv_filename, cv_original_name FROM users WHERE id = ?",
+      [req.user.id]
+    );
+
     const candidate = users[0];
     const profile = await getProfileByUserId(req.user.id);
 
     await addEvent(req.user.id, jobId, "APPLY", "Se postuló a una vacante.");
-    await addNotification(req.user.id, `Tu postulación a ${job.title} fue enviada correctamente.`);
+    await addNotification(
+      req.user.id,
+      `Tu postulación a ${job.title} fue enviada correctamente.`,
+      "Postulación enviada",
+      "success",
+      "/dashboard.html#applications"
+    );
 
     if (job.created_by) {
-      await addNotification(job.created_by, `${candidate.name} se postuló a la vacante ${job.title}.`);
+      await addNotification(
+        job.created_by,
+        `${candidate.name} se postuló a la vacante ${job.title}.`,
+        "Nuevo candidato",
+        "application",
+        "/dashboard.html#recruiter"
+      );
     }
 
     const attachments = [];
+
     if (candidate.cv_filename) {
-      attachments.push({
-        filename: candidate.cv_original_name || candidate.cv_filename,
-        path: path.join(uploadDir, candidate.cv_filename)
-      });
+      const cvPath = path.join(uploadDir, candidate.cv_filename);
+
+      if (fs.existsSync(cvPath)) {
+        attachments.push({
+          filename: candidate.cv_original_name || candidate.cv_filename,
+          path: cvPath
+        });
+      }
     }
 
     await sendEmail({
       to: candidate.email,
       subject: `Postulación enviada - ${job.title}`,
       html: `
-         <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
-    <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
-      <div style="background:#4f46e5;padding:24px;color:white;">
-        <h1 style="margin:0;font-size:24px;">Postulación enviada correctamente</h1>
-        <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
-      </div>
+        <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
+          <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+            <div style="background:#4f46e5;padding:24px;color:white;">
+              <h1 style="margin:0;font-size:24px;">Postulación enviada correctamente</h1>
+              <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
+            </div>
 
-      <div style="padding:26px;">
-        <p>Hola <strong>${candidate.name}</strong>,</p>
-        <p>Tu postulación fue registrada exitosamente.</p>
+            <div style="padding:26px;">
+              <p>Hola <strong>${candidate.name}</strong>,</p>
+              <p>Tu postulación fue registrada exitosamente.</p>
 
-        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
-          <p><strong>Vacante:</strong> ${job.title}</p>
-          <p><strong>Empresa:</strong> ${job.company}</p>
-          <p><strong>Estado inicial:</strong> Postulado</p>
-          <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
-          <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
+              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
+                <p><strong>Vacante:</strong> ${job.title}</p>
+                <p><strong>Empresa:</strong> ${job.company}</p>
+                <p><strong>Estado inicial:</strong> Postulado</p>
+                <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
+                <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
+              </div>
+
+              <p style="font-size:14px;color:#4b5563;">
+                Puedes hacer seguimiento a tu proceso desde el tablero de postulaciones.
+              </p>
+
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+
+              <p style="font-size:12px;color:#6b7280;margin:0;">
+                Este correo fue generado automáticamente por ProfileMatch Magneto.
+              </p>
+            </div>
+          </div>
         </div>
-
-        <p style="font-size:14px;color:#4b5563;">
-          Puedes hacer seguimiento a tu proceso desde el tablero de postulaciones.
-        </p>
-
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-
-        <p style="font-size:12px;color:#6b7280;margin:0;">
-          Este correo fue generado automáticamente por ProfileMatch Magneto.
-        </p>
-      </div>
-    </div>
-  </div>
-      `,
-      attachments
+      `
     });
 
-    const companyEmail = job.recruiter_email || process.env.COMPANY_EMAIL;
-    if (companyEmail) {
+    const recruiterEmail = job.recruiter_email;
+
+    console.log("Correo del reclutador:", recruiterEmail);
+
+    if (recruiterEmail) {
       await sendEmail({
-        to: companyEmail,
+        to: recruiterEmail,
         subject: `Nueva postulación - ${job.title}`,
         html: `
           <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
-    <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
-      <div style="background:#4f46e5;padding:24px;color:white;">
-        <h1 style="margin:0;font-size:24px;">Nueva postulación recibida</h1>
-        <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
-      </div>
+            <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+              <div style="background:#4f46e5;padding:24px;color:white;">
+                <h1 style="margin:0;font-size:24px;">Nueva postulación recibida</h1>
+                <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
+              </div>
 
-      <div style="padding:26px;">
-        <p style="font-size:16px;margin-top:0;">
-          Se recibió una nueva postulación para la vacante:
-        </p>
+              <div style="padding:26px;">
+                <p style="font-size:16px;margin-top:0;">
+                  Hola ${job.recruiter_name || "reclutador"}, recibiste una nueva postulación.
+                </p>
 
-        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
-          <p><strong>Vacante:</strong> ${job.title}</p>
-          <p><strong>Empresa:</strong> ${job.company}</p>
-          <p><strong>Candidato:</strong> ${candidate.name}</p>
-          <p><strong>Correo:</strong> <a href="mailto:${candidate.email}">${candidate.email}</a></p>
-          <p><strong>Ciudad:</strong> ${profile?.city || "No registrada"}</p>
-          <p><strong>Perfil:</strong> ${profile?.profession || "No registrado"}</p>
-          <p><strong>Experiencia:</strong> ${profile?.years_experience || 0} años</p>
-          <p><strong>Skills:</strong> ${profile?.skills || "No registradas"}</p>
-          <p><strong>Mensaje:</strong> ${coverMessage || "Sin mensaje adicional."}</p>
-        </div>
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
+                  <p><strong>Vacante:</strong> ${job.title}</p>
+                  <p><strong>Empresa:</strong> ${job.company}</p>
+                  <p><strong>Candidato:</strong> ${candidate.name}</p>
+                  <p><strong>Correo:</strong> <a href="mailto:${candidate.email}">${candidate.email}</a></p>
+                  <p><strong>Ciudad:</strong> ${profile?.city || "No registrada"}</p>
+                  <p><strong>Perfil:</strong> ${profile?.profession || "No registrado"}</p>
+                  <p><strong>Experiencia:</strong> ${profile?.years_experience || 0} años</p>
+                  <p><strong>Skills:</strong> ${profile?.skills || "No registradas"}</p>
+                  <p><strong>Mensaje:</strong> ${coverMessage || "Sin mensaje adicional."}</p>
+                </div>
 
-        <p style="font-size:14px;color:#4b5563;">
-          ${candidate.cv_filename
-            ? "La hoja de vida del candidato se adjunta a este correo."
-            : "El candidato aún no tiene hoja de vida cargada en la plataforma."}
-        </p>
+                <p style="font-size:14px;color:#4b5563;">
+                  ${
+                    attachments.length > 0
+                      ? "La hoja de vida del candidato se adjunta a este correo."
+                      : "El candidato aún no tiene hoja de vida cargada en la plataforma."
+                  }
+                </p>
 
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
 
-        <p style="font-size:12px;color:#6b7280;margin:0;">
-          Este correo fue generado automáticamente por ProfileMatch Magneto.
-        </p>
-      </div>
-    </div>
-  </div>
+                <p style="font-size:12px;color:#6b7280;margin:0;">
+                  Este correo fue generado automáticamente por ProfileMatch Magneto.
+                </p>
+              </div>
+            </div>
+          </div>
         `,
         attachments
       });
+    } else {
+      console.log("No se envió correo al reclutador porque la vacante no tiene recruiter_email ni created_by válido.");
     }
 
     res.json({ message: `Tu postulación fue enviada correctamente a ${job.company}.` });
   } catch (error) {
     console.error("Error apply:", error);
-    res.status(500).json({ message: "No se pudo completar la postulación. Revisa SMTP y base de datos." });
+    
+  res.status(500).json({
+    message:
+      "La postulación fue registrada, pero no se pudo enviar el correo de notificación. El reclutador podrá verla desde su panel."
+  });
   }
 });
 
@@ -696,11 +752,70 @@ app.get("/api/events", requireAuth, async (req, res) => {
 
 app.get("/api/notifications", requireAuth, async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC", [req.user.id]);
-    res.json(rows);
+    const [rows] = await db.query(
+      `
+      SELECT id, title, message, type, link, is_read, created_at
+      FROM notifications
+      WHERE user_id = ?
+      ORDER BY is_read ASC, created_at DESC
+      `,
+      [req.user.id]
+    );
+
+    const [countRows] = await db.query(
+      "SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND is_read = FALSE",
+      [req.user.id]
+    );
+
+    res.json({
+      notifications: rows,
+      unread: countRows[0].unread
+    });
   } catch (error) {
     console.error("Error notifications:", error);
     res.status(500).json({ message: "Error al cargar notificaciones." });
+  }
+});
+
+app.patch("/api/notifications/:id/read", requireAuth, async (req, res) => {
+  try {
+    await db.query(
+      "UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?",
+      [req.params.id, req.user.id]
+    );
+
+    res.json({ message: "Notificación marcada como leída." });
+  } catch (error) {
+    console.error("Error mark notification read:", error);
+    res.status(500).json({ message: "Error al actualizar notificación." });
+  }
+});
+
+app.patch("/api/notifications/read-all", requireAuth, async (req, res) => {
+  try {
+    await db.query(
+      "UPDATE notifications SET is_read = TRUE WHERE user_id = ?",
+      [req.user.id]
+    );
+
+    res.json({ message: "Todas las notificaciones fueron marcadas como leídas." });
+  } catch (error) {
+    console.error("Error mark all notifications:", error);
+    res.status(500).json({ message: "Error al actualizar notificaciones." });
+  }
+});
+
+app.delete("/api/notifications/:id", requireAuth, async (req, res) => {
+  try {
+    await db.query(
+      "DELETE FROM notifications WHERE id = ? AND user_id = ?",
+      [req.params.id, req.user.id]
+    );
+
+    res.json({ message: "Notificación eliminada." });
+  } catch (error) {
+    console.error("Error delete notification:", error);
+    res.status(500).json({ message: "Error al eliminar notificación." });
   }
 });
 
@@ -892,8 +1007,14 @@ app.patch("/api/recruiter/applications/:id/status", requireAuth, requireRecruite
     const application = rows[0];
 
     await db.query("UPDATE applications SET status = ? WHERE id = ?", [status, req.params.id]);
-    await addNotification(application.user_id, `El estado de tu postulación a ${application.title} cambió a: ${status}.`);
-
+    
+    await addNotification(
+      application.user_id,
+      `El estado de tu postulación a ${application.title} cambió a: ${status}.`,
+      "Estado actualizado",
+      "status",
+      "/dashboard.html#applications"
+    );
     await sendEmail({
       to: application.email,
       subject: `Actualización de postulación - ${application.title}`,

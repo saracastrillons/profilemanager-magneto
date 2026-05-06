@@ -537,22 +537,153 @@ async function loadEvents() {
 }
 
 async function loadNotifications() {
-  const container = document.getElementById("notifications");
+  const container = document.getElementById("notificationsList");
+  const badge = document.getElementById("notificationBadge");
+
   if (!container) return;
 
   try {
-    const res = await fetch(`${API}/notifications`, { headers: { Authorization: "Bearer " + getToken() } });
+    const res = await fetch(`${API}/notifications`, {
+      headers: {
+        Authorization: "Bearer " + getToken()
+      }
+    });
+
     const data = await readJson(res);
-    container.innerHTML = data.length
-      ? data.map((notification) => `
-        <div class="timeline-item">
-          <p>${notification.message}</p>
-          <small>${new Date(notification.created_at).toLocaleString("es-CO")}</small>
+
+    if (!res.ok) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>Error al cargar notificaciones.</h3>
+          <p>${data.message || "Error del servidor."}</p>
         </div>
-      `).join("")
-      : "<p>No hay notificaciones.</p>";
+      `;
+      return;
+    }
+
+    const notifications = data.notifications || [];
+    const unread = data.unread || 0;
+
+    if (badge) {
+      badge.textContent = `${unread} sin leer`;
+      badge.classList.toggle("has-unread", unread > 0);
+    }
+
+    if (!notifications.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>No tienes notificaciones</h3>
+          <p>Cuando recibas novedades aparecerán aquí.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = notifications.map((n) => {
+      const isRead = Number(n.is_read) === 1;
+
+      return `
+        <article class="notification-card ${isRead ? "read" : "unread"}">
+          <div class="notification-icon ${n.type || "info"}">
+            ${getNotificationIcon(n.type)}
+          </div>
+
+          <div class="notification-content">
+            <div class="notification-top">
+              <h3>${n.title || "Notificación"}</h3>
+              <span>${formatNotificationDate(n.created_at)}</span>
+            </div>
+
+            <p>${n.message || ""}</p>
+
+            <div class="notification-buttons">
+              ${
+                n.link
+                  ? `<button type="button" onclick="openNotification(${n.id}, '${n.link}')">Ver detalle</button>`
+                  : ""
+              }
+
+              ${
+                !isRead
+                  ? `<button type="button" onclick="markNotificationRead(${n.id})">Marcar como leída</button>`
+                  : ""
+              }
+
+              <button type="button" class="danger" onclick="deleteNotification(${n.id})">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
   } catch (error) {
-    container.innerHTML = `<p class="message">${error.message}</p>`;
+    console.error("ERROR REAL EN NOTIFICACIONES:", error);
+
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Error al cargar notificaciones.</h3>
+        <p>${error.message}</p>
+      </div>
+    `;
+  }
+}
+
+function getNotificationIcon(type) {
+  if (type === "success") return "✓";
+  if (type === "application") return "👤";
+  if (type === "status") return "↻";
+  if (type === "warning") return "!";
+  return "i";
+}
+
+function formatNotificationDate(dateValue) {
+  if (!dateValue) return "";
+
+  return new Date(dateValue).toLocaleString("es-CO", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+}
+
+async function markNotificationRead(id) {
+  await fetch(`${API}/notifications/${id}/read`, {
+    method: "PATCH",
+    headers: {
+      Authorization: "Bearer " + getToken()
+    }
+  });
+
+  loadNotifications();
+}
+
+async function markAllNotificationsRead() {
+  await fetch(`${API}/notifications/read-all`, {
+    method: "PATCH",
+    headers: {
+      Authorization: "Bearer " + getToken()
+    }
+  });
+
+  loadNotifications();
+}
+
+async function deleteNotification(id) {
+  await fetch(`${API}/notifications/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: "Bearer " + getToken()
+    }
+  });
+
+  loadNotifications();
+}
+
+async function openNotification(id, link) {
+  await markNotificationRead(id);
+
+  if (link) {
+    window.location.href = link;
   }
 }
 
@@ -692,6 +823,8 @@ async function toggleJobStatus(jobId, isActive) {
     alert(error.message);
   }
 }
+
+
 
 async function loadCandidates(jobId) {
   showSection("recruiterCandidatesSection", document.querySelector("#recruiterMenu .side-btn:nth-child(4)"));

@@ -191,8 +191,42 @@
     </section>
 
     <section id="notificationsSection" class="dash-section">
-      <div class="section-heading"><h2>Notificaciones</h2><p>Mensajes importantes de tu cuenta.</p></div>
-      <div id="notifications" class="timeline"></div>
+      <div class="notifications-panel">
+    
+        <div class="notifications-header">
+    
+          <div>
+            <h2>Notificaciones</h2>
+            <p>
+              Consulta novedades sobre postulaciones, vacantes,
+              cambios de estado y actividad de tu cuenta.
+            </p>
+          </div>
+    
+          <div class="notifications-actions">
+            <span id="notificationBadge" class="notification-badge">
+              0 sin leer
+            </span>
+    
+            <button type="button" onclick="markAllNotificationsRead()">
+              Marcar todas como leídas
+            </button>
+          </div>
+    
+        </div>
+    
+        <div id="notificationsList" class="notifications-list">
+    
+          <div class="empty-state">
+            <h3>No tienes notificaciones</h3>
+            <p>
+              Cuando recibas novedades del sistema aparecerán aquí.
+            </p>
+          </div>
+    
+        </div>
+    
+      </div>
     </section>
   </main>
 
