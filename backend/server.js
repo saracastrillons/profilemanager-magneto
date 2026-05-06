@@ -78,13 +78,13 @@ function appUrl() {
 
 async function sendEmail({ to, subject, html, attachments = [] }) {
   if (!process.env.RESEND_API_KEY) {
-    console.error("Falta RESEND_API_KEY en Railway.");
+    console.error("ERROR RESEND: falta RESEND_API_KEY.");
     throw new Error("Falta RESEND_API_KEY.");
   }
 
   if (!to) {
-    console.error("No hay destinatario para el correo.");
-    throw new Error("No hay destinatario.");
+    console.error("ERROR RESEND: no hay destinatario.");
+    throw new Error("No hay destinatario para el correo.");
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
@@ -111,7 +111,13 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     console.log("Correo enviado con Resend:", result);
     return result;
   } catch (error) {
-    console.error("ERROR RESEND:", error);
+    console.error("ERROR RESEND DETALLADO:", {
+      message: error.message,
+      name: error.name,
+      statusCode: error.statusCode,
+      response: error.response
+    });
+
     throw error;
   }
 }
@@ -559,17 +565,37 @@ app.post("/api/apply", requireAuth, async (req, res) => {
       to: candidate.email,
       subject: `Postulación enviada - ${job.title}`,
       html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-          <h2 style="color:#4f46e5">Postulación enviada correctamente</h2>
-          <p>Hola ${candidate.name},</p>
-          <p>Tu postulación a <strong>${job.title}</strong> en <strong>${job.company}</strong> fue registrada exitosamente.</p>
+         <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
+    <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+      <div style="background:#4f46e5;padding:24px;color:white;">
+        <h1 style="margin:0;font-size:24px;">Postulación enviada correctamente</h1>
+        <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
+      </div>
+
+      <div style="padding:26px;">
+        <p>Hola <strong>${candidate.name}</strong>,</p>
+        <p>Tu postulación fue registrada exitosamente.</p>
+
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
+          <p><strong>Vacante:</strong> ${job.title}</p>
+          <p><strong>Empresa:</strong> ${job.company}</p>
           <p><strong>Estado inicial:</strong> Postulado</p>
           <p><strong>Ciudad:</strong> ${job.city || "No especificada"}</p>
           <p><strong>Modalidad:</strong> ${job.modality || "No especificada"}</p>
-          <p>${candidate.cv_filename ? "Adjuntamos la hoja de vida que cargaste en la plataforma." : "Aún no tienes hoja de vida cargada. Puedes subirla desde tu perfil."}</p>
-          <hr>
-          <p style="font-size:13px;color:#6b7280">Profile Manager Magneto</p>
         </div>
+
+        <p style="font-size:14px;color:#4b5563;">
+          Puedes hacer seguimiento a tu proceso desde el tablero de postulaciones.
+        </p>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+
+        <p style="font-size:12px;color:#6b7280;margin:0;">
+          Este correo fue generado automáticamente por ProfileMatch Magneto.
+        </p>
+      </div>
+    </div>
+  </div>
       `,
       attachments
     });
@@ -580,16 +606,44 @@ app.post("/api/apply", requireAuth, async (req, res) => {
         to: companyEmail,
         subject: `Nueva postulación - ${job.title}`,
         html: `
-          <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-            <h2>Nueva postulación recibida</h2>
-            <p><strong>Candidato:</strong> ${candidate.name}</p>
-            <p><strong>Correo:</strong> ${candidate.email}</p>
-            <p><strong>Vacante:</strong> ${job.title}</p>
-            <p><strong>Empresa:</strong> ${job.company}</p>
-            <p><strong>Ciudad candidato:</strong> ${profile?.city || "No registrada"}</p>
-            <p><strong>Skills:</strong> ${profile?.skills || "No registradas"}</p>
-            <p><strong>Mensaje del candidato:</strong> ${coverMessage || "Sin mensaje adicional."}</p>
-          </div>
+          <div style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;">
+    <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+      <div style="background:#4f46e5;padding:24px;color:white;">
+        <h1 style="margin:0;font-size:24px;">Nueva postulación recibida</h1>
+        <p style="margin:8px 0 0;font-size:14px;">ProfileMatch Magneto</p>
+      </div>
+
+      <div style="padding:26px;">
+        <p style="font-size:16px;margin-top:0;">
+          Se recibió una nueva postulación para la vacante:
+        </p>
+
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:18px 0;">
+          <p><strong>Vacante:</strong> ${job.title}</p>
+          <p><strong>Empresa:</strong> ${job.company}</p>
+          <p><strong>Candidato:</strong> ${candidate.name}</p>
+          <p><strong>Correo:</strong> <a href="mailto:${candidate.email}">${candidate.email}</a></p>
+          <p><strong>Ciudad:</strong> ${profile?.city || "No registrada"}</p>
+          <p><strong>Perfil:</strong> ${profile?.profession || "No registrado"}</p>
+          <p><strong>Experiencia:</strong> ${profile?.years_experience || 0} años</p>
+          <p><strong>Skills:</strong> ${profile?.skills || "No registradas"}</p>
+          <p><strong>Mensaje:</strong> ${coverMessage || "Sin mensaje adicional."}</p>
+        </div>
+
+        <p style="font-size:14px;color:#4b5563;">
+          ${candidate.cv_filename
+            ? "La hoja de vida del candidato se adjunta a este correo."
+            : "El candidato aún no tiene hoja de vida cargada en la plataforma."}
+        </p>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+
+        <p style="font-size:12px;color:#6b7280;margin:0;">
+          Este correo fue generado automáticamente por ProfileMatch Magneto.
+        </p>
+      </div>
+    </div>
+  </div>
         `,
         attachments
       });
