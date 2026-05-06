@@ -478,7 +478,55 @@ async function showJobDetail(jobId) {
         `
         : ""
     }
-
+    ${
+      job.match
+        ? `
+          <div class="skills-analysis">
+    
+            <div class="skills-analysis-card ok">
+    
+              <h3>Habilidades que ya cumples</h3>
+    
+              <div class="skills">
+    
+                ${
+                  job.match.matchedSkills?.length
+    
+                    ? job.match.matchedSkills
+                        .map((skill) => `<span>${skill}</span>`)
+                        .join("")
+    
+                    : "<p>No se encontraron coincidencias exactas.</p>"
+                }
+    
+              </div>
+    
+            </div>
+    
+            <div class="skills-analysis-card missing">
+    
+              <h3>Habilidades por fortalecer</h3>
+    
+              <div class="skills">
+    
+                ${
+                  job.match.missingSkills?.length
+    
+                    ? job.match.missingSkills
+                        .map((skill) => `<span>${skill}</span>`)
+                        .join("")
+    
+                    : "<p>Cumples con las habilidades principales solicitadas.</p>"
+                }
+    
+              </div>
+    
+            </div>
+    
+          </div>
+        `
+        : ""
+    }
     <h3>Habilidades requeridas</h3>
     <div class="skills">${skillsHtml(job.skills)}</div>
 
