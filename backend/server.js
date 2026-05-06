@@ -10,6 +10,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
+const { Resend } = require("resend");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -76,39 +77,45 @@ function appUrl() {
 }
 
 async function sendEmail({ to, subject, html, attachments = [] }) {
-  const transporter = createTransporter();
-
-  if (!transporter) {
-    throw new Error("Configuración SMTP incompleta.");
+  if (!process.env.RESEND_API_KEY) {
+    console.error("Falta RESEND_API_KEY en Railway.");
+    throw new Error("Falta RESEND_API_KEY.");
   }
 
   if (!to) {
-    throw new Error("No hay destinatario para el correo.");
+    console.error("No hay destinatario para el correo.");
+    throw new Error("No hay destinatario.");
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || `ProfileMatch Magneto <${process.env.EMAIL_USER}>`,
+    const emailData = {
+      from: process.env.EMAIL_FROM || "ProfileMatch Magneto <onboarding@resend.dev>",
       to,
       subject,
-      html,
-      attachments
-    });
+      html
+    };
 
-    console.log("Correo enviado correctamente:", info.messageId);
-    return info;
+    if (attachments && attachments.length > 0) {
+      emailData.attachments = attachments
+        .filter((file) => file.path && fs.existsSync(file.path))
+        .map((file) => ({
+          filename: file.filename,
+          content: fs.readFileSync(file.path).toString("base64")
+        }));
+    }
+
+    const result = await resend.emails.send(emailData);
+
+    console.log("Correo enviado con Resend:", result);
+    return result;
   } catch (error) {
-    console.error("ERROR SMTP DETALLADO:", {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode
-    });
-
+    console.error("ERROR RESEND:", error);
     throw error;
   }
 }
+
 function generateToken(user) {
   return jwt.sign(
     {
