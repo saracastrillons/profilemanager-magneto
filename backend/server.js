@@ -34,12 +34,13 @@ const db = mysql.createPool({
 });
 
 function createTransporter() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.error("Faltan EMAIL_USER o EMAIL_PASS");
+    return null;
+  }
 
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: Number(process.env.EMAIL_PORT || 465),
-    secure: String(process.env.EMAIL_SECURE || "true") === "true",
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
@@ -76,20 +77,38 @@ function appUrl() {
 
 async function sendEmail({ to, subject, html, attachments = [] }) {
   const transporter = createTransporter();
-  if (!transporter || !to) {
-    console.log("Correo omitido: falta configuración SMTP o destinatario.");
-    return;
+
+  if (!transporter) {
+    throw new Error("Configuración SMTP incompleta.");
   }
 
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || `"Profile Manager Magneto" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-    attachments
-  });
-}
+  if (!to) {
+    throw new Error("No hay destinatario para el correo.");
+  }
 
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || `ProfileMatch Magneto <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+      attachments
+    });
+
+    console.log("Correo enviado correctamente:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("ERROR SMTP DETALLADO:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode
+    });
+
+    throw error;
+  }
+}
 function generateToken(user) {
   return jwt.sign(
     {
